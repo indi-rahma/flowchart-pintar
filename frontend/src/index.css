@@ -1,0 +1,11 @@
+:root {
+  --primary-yellow: #FACC15;
+  --dark-yellow: #854D0E;
+  --bg-soft: #FEFCE8;
+}
+
+body {
+  background-color: var(--bg-soft);
+  font-family: 'Inter', sans-serif; /* Biar kelihatan modern */
+}
+

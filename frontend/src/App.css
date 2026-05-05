@@ -1,0 +1,117 @@
+/* 1. VARIABLE HARUS DI PALING ATAS & LUAR */
+:root {
+  --accent: #854D0E;
+  --accent-bg: #FACC15;
+  --accent-border: #EAB308;
+  --bg-main: #FEFCE8;
+  --border: #FDE047;
+  --text-h: #422006;
+  --social-bg: #FEF9C3;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 2. GLOBAL STYLES */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-main);
+  color: #1a1a1a;
+  font-family: sans-serif;
+}
+
+.text-dark-gold {
+  color: var(--text-h);
+}
+
+/* 3. COMPONENTS */
+.counter {
+  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: white;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 12px;
+
+  &:hover {
+    background: var(--accent-border);
+  }
+}
+
+.module-card-locked {
+  filter: grayscale(1);
+  opacity: 0.5;
+  pointer-events: none;
+  background: #f1f1f1 !important;
+}
+
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 40px 0;
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+  min-height: 80vh;
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  max-width: 1000px;
+  margin: 0 auto;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    border-right: 1px solid var(--border);
+  }
+
+  & > div:last-child {
+    border-right: none;
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    font-size: 24px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+    & > div {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+  text-align: center;
+}
+/* Pastikan container React Flow punya ukuran */
+.react-flow__container {
+  background-color: #ffffff; /* Biar kelihatan bedanya sama background kuning */
+}
+
+/* Biar tombol kontrol (zoom in/out) kelihatan di pojok */
+.react-flow__controls {
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
