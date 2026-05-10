@@ -1,6 +1,9 @@
 import React from "react";
 
 const BagianStatistik = ({ stats, searchTerm, setSearchTerm }) => {
+  const completedMissions = stats.completedMissions || 0;
+  const totalMissions = stats.totalMissions || 0;
+
   return (
     <>
       <header className="header-riwayat">
@@ -60,8 +63,10 @@ const BagianStatistik = ({ stats, searchTerm, setSearchTerm }) => {
           <div className="side-card side-card-green cyber-card">
             <div className="side-icon">✅</div>
             <div>
-              <span className="side-label">MISSION CLEAR</span>
-              <span className="side-value">{stats.passed}</span>
+              <span className="side-label">MISI SELESAI</span>
+              <span className="side-value">
+                {completedMissions} / {totalMissions}
+              </span>
             </div>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import YouTube from "react-youtube";
 import HalamanKuis from "../quiz/HalamanKuis";
 import HeaderMateri from "./HeaderMateri";
 import KontenMateri from "./KontenMateri";
@@ -31,7 +30,10 @@ const ContentReader = () => {
 
   const getEmbedVideoId = (url) => {
     if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]{11}).*/;
+
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]{11}).*/;
+
     const match = url.match(regExp);
     return match?.[2] || null;
   };
@@ -46,6 +48,24 @@ const ContentReader = () => {
     item.progress_done === 1 ||
     item.progress_done === true;
 
+  const normalizeItem = (item) => {
+    const title = String(item.title || "").toLowerCase();
+    const type = String(item.type || "").toLowerCase();
+
+    const looksLikeQuiz =
+      type === "quiz" ||
+      title.includes("quiz") ||
+      title.includes("kuis") ||
+      title.includes("pretest") ||
+      title.includes("posttest");
+
+    return {
+      ...item,
+      type: looksLikeQuiz ? "quiz" : item.type,
+      done: isDone(item),
+    };
+  };
+
   useEffect(() => {
     const fetchReaderData = async () => {
       try {
@@ -58,7 +78,9 @@ const ContentReader = () => {
 
         const [moduleRes, itemsRes, imagesRes] = await Promise.all([
           fetch(`${API_URL}/api/student/modules`),
-          fetch(`${API_URL}/api/module-items?moduleId=${parsedModuleId}&userId=${userId}`),
+          fetch(
+            `${API_URL}/api/module-items?moduleId=${parsedModuleId}&userId=${userId}`
+          ),
           fetch(`${API_URL}/api/material-images?materialId=${currentItemId}`),
         ]);
 
@@ -82,7 +104,7 @@ const ContentReader = () => {
                   Number(a.order_index ?? 0) - Number(b.order_index ?? 0) ||
                   Number(a.id) - Number(b.id)
               )
-              .map((item) => ({ ...item, done: isDone(item) }))
+              .map(normalizeItem)
           : [];
 
         const selectedItem = sortedItems.find(
@@ -111,6 +133,7 @@ const ContentReader = () => {
   );
 
   const prevItem = currentIndex > 0 ? moduleItems[currentIndex - 1] : null;
+
   const nextItem =
     currentIndex >= 0 && currentIndex < moduleItems.length - 1
       ? moduleItems[currentIndex + 1]
@@ -144,14 +167,24 @@ const ContentReader = () => {
         throw new Error("Gagal menyimpan progress.");
       }
 
-      setCurrentItem((prev) => (prev ? { ...prev, done: true } : prev));
-      setModuleItems((prev) =>
-        prev.map((item) =>
-          Number(item.id) === Number(currentItem.id)
-            ? { ...item, done: true }
-            : item
-        )
-      );
+      const completedState = {
+  done: true,
+  is_done: true,
+  completed: true,
+  progress_done: true,
+};
+
+setCurrentItem((prev) =>
+  prev ? { ...prev, ...completedState } : prev
+);
+
+setModuleItems((prev) =>
+  prev.map((item) =>
+    Number(item.id) === Number(currentItem.id)
+      ? { ...item, ...completedState }
+      : item
+  )
+);
 
       return true;
     } catch (err) {
@@ -189,12 +222,15 @@ const ContentReader = () => {
       );
 
       const nextModuleItems = await itemsRes.json();
+
       const sortedItems = Array.isArray(nextModuleItems)
-        ? nextModuleItems.sort(
-            (a, b) =>
-              Number(a.order_index ?? 0) - Number(b.order_index ?? 0) ||
-              Number(a.id) - Number(b.id)
-          )
+        ? nextModuleItems
+            .sort(
+              (a, b) =>
+                Number(a.order_index ?? 0) - Number(b.order_index ?? 0) ||
+                Number(a.id) - Number(b.id)
+            )
+            .map(normalizeItem)
         : [];
 
       const firstItem = sortedItems[0];
@@ -260,7 +296,11 @@ const ContentReader = () => {
     return (
       <div className="reader-center-state">
         <p>{error}</p>
-        <button onClick={() => navigate(-1)} className="reader-dark-button">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="reader-dark-button"
+        >
           ← Kembali
         </button>
       </div>
@@ -281,7 +321,11 @@ const ContentReader = () => {
       <div className="reader-blur reader-blur-one"></div>
       <div className="reader-blur reader-blur-two"></div>
 
-      <button onClick={() => navigate("/modul-saya")} className="reader-back-button">
+      <button
+        type="button"
+        onClick={() => navigate("/modul-saya")}
+        className="reader-back-button"
+      >
         ← Modul Saya
       </button>
 
@@ -308,6 +352,7 @@ const ContentReader = () => {
 
           <section className="reader-nav-row">
             <button
+              type="button"
               disabled={!prevItem}
               className="reader-nav-button"
               onClick={() =>
@@ -318,6 +363,7 @@ const ContentReader = () => {
             </button>
 
             <button
+              type="button"
               className="reader-nav-button is-primary"
               onClick={handleSelesaiDanLanjut}
               disabled={saving}

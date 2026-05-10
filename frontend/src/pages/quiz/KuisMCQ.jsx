@@ -1,7 +1,6 @@
 import React from "react";
 
-function MCQQuiz({ data, selectedAnswer, setSelectedAnswer }) {
-  // 🔥 FIX URL GAMBAR (support semua kondisi DB)
+function MCQQuiz({ data, selectedAnswer, setSelectedAnswer, isAnsweredCorrect }) {
   const getImageUrl = (path) => {
     if (!path) return null;
 
@@ -13,6 +12,8 @@ function MCQQuiz({ data, selectedAnswer, setSelectedAnswer }) {
 
     return `http://localhost:5000/uploads/${path}`;
   };
+
+  const correctAnswer = String(data?.correct_answer || "").toUpperCase();
 
   const options = [
     {
@@ -45,7 +46,6 @@ function MCQQuiz({ data, selectedAnswer, setSelectedAnswer }) {
     <div style={wrapperStyle}>
       <h3 style={questionStyle}>{data?.question}</h3>
 
-      {/* 🔥 GAMBAR SOAL */}
       {data?.image && (
         <img
           src={getImageUrl(data.image)}
@@ -57,32 +57,53 @@ function MCQQuiz({ data, selectedAnswer, setSelectedAnswer }) {
       <div style={optionsStyle}>
         {options.map((opt) => {
           const active = selectedAnswer === opt.value;
+          const isCorrectOption = opt.value === correctAnswer;
+          const showGreen = isAnsweredCorrect && isCorrectOption;
 
           return (
             <button
               key={opt.key}
               type="button"
-              onClick={() => setSelectedAnswer(opt.value)}
+              onClick={() => {
+                if (!isAnsweredCorrect) {
+                  setSelectedAnswer(opt.value);
+                }
+              }}
+              disabled={isAnsweredCorrect}
               style={{
                 ...optionStyle,
-                borderColor: active ? "#6366f1" : "#e2e8f0",
-                background: active ? "#eef2ff" : "#fff",
+                cursor: isAnsweredCorrect ? "default" : "pointer",
+                borderColor: showGreen
+                  ? "#22c55e"
+                  : active
+                  ? "#6366f1"
+                  : "#e2e8f0",
+                background: showGreen
+                  ? "#dcfce7"
+                  : active
+                  ? "#eef2ff"
+                  : "#fff",
+                color: showGreen ? "#166534" : "#0f172a",
               }}
             >
               <span
                 style={{
                   ...letterStyle,
-                  background: active ? "#6366f1" : "#f1f5f9",
-                  color: active ? "#fff" : "#64748b",
+                  background: showGreen
+                    ? "#22c55e"
+                    : active
+                    ? "#6366f1"
+                    : "#f1f5f9",
+                  color: showGreen || active ? "#fff" : "#64748b",
                 }}
               >
                 {opt.key}
               </span>
 
-              {/* 🔥 TEXT */}
               {opt.text && <span style={{ flex: 1 }}>{opt.text}</span>}
 
-              {/* 🔥 GAMBAR OPTION */}
+              {showGreen && <span style={correctBadgeStyle}>Benar</span>}
+
               {opt.image && (
                 <img
                   src={getImageUrl(opt.image)}
@@ -95,14 +116,18 @@ function MCQQuiz({ data, selectedAnswer, setSelectedAnswer }) {
         })}
       </div>
 
+      {isAnsweredCorrect && (
+        <div style={successBoxStyle}>
+          ✅ Jawaban benar, silakan lanjut ke materi.
+        </div>
+      )}
+
       {options.length === 0 && (
         <p style={emptyTextStyle}>Pilihan jawaban belum tersedia.</p>
       )}
     </div>
   );
 }
-
-// ================= STYLE =================
 
 const wrapperStyle = {
   padding: "24px",
@@ -135,10 +160,8 @@ const optionStyle = {
   display: "flex",
   alignItems: "center",
   gap: "12px",
-  cursor: "pointer",
   fontWeight: 700,
   textAlign: "left",
-  color: "#0f172a",
   transition: "0.2s ease",
 };
 
@@ -157,6 +180,25 @@ const optionImageStyle = {
   maxWidth: "120px",
   borderRadius: "10px",
   border: "1px solid #e2e8f0",
+};
+
+const correctBadgeStyle = {
+  padding: "5px 10px",
+  borderRadius: "999px",
+  background: "#bbf7d0",
+  color: "#166534",
+  fontSize: "12px",
+  fontWeight: 900,
+};
+
+const successBoxStyle = {
+  marginTop: "18px",
+  padding: "14px 16px",
+  borderRadius: "14px",
+  background: "#dcfce7",
+  color: "#166534",
+  border: "1px solid #86efac",
+  fontWeight: 800,
 };
 
 const emptyTextStyle = {

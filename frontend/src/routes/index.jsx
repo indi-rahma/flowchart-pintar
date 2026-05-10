@@ -3,15 +3,16 @@ import ProtectedRoute from "./ProtectedRoutes";
 
 // USER
 import Dashboard from "../pages/dashboard/Dashboard";
-import ModulSaya from "../pages/ModulSaya";
+import ModulSaya from "../pages/siswa/modul-saya/ModulSaya";
 import RiwayatKuis from "../pages/riwayat-kuis/RiwayatKuis";
 import Pencapaian from "../pages/Pencapaian";
-import ContentReader from "../pages/reader/ContentReader";;
+import ContentReader from "../pages/reader/ContentReader";
 import FlowEditor from "../components/FlowEditor";
-import Pengaturan from "../pages/pengaturan/Pengaturan";
+import Pengaturan from "../pages/siswa/pengaturan/Pengaturan";
 import Login from "../pages/siswa/Login";
 import SignUp from "../pages/siswa/SignUp";
 import LatihanFlowchart from "../pages/LatihanFlowchart";
+
 
 
 
@@ -61,7 +62,7 @@ const AppRoutes = () => {
         <Route path="/pencapaian" element={<Pencapaian />} />
         <Route path="/reader/:moduleId/:itemId" element={<ContentReader />} />
         <Route path="/riwayat-kuis" element={<RiwayatKuis />} />
-        <Route path="/pengaturan" element={<Pengaturan />} />
+        <Route path="/siswa/pengaturan" element={<Pengaturan />} />
         <Route path="/latihan" element={<FlowEditor />} />
 
         <Route path="/quiz/:id" element={<HalamanKuis />} />

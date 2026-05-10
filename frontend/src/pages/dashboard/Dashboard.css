@@ -816,3 +816,117 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================
+   PESAN GURU MELAYANG
+========================= */
+
+.dashboard-page .dashboard-container .guru-feedback-floating {
+  position: absolute !important;
+
+  top: 345px !important;
+  left: 20px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+
+  width: 340px !important;
+
+  padding: 12px 16px !important;
+
+  border-radius: 22px !important;
+
+  background: rgba(255, 255, 255, 0.92) !important;
+
+  border: 1.5px solid rgba(250, 204, 21, 0.4) !important;
+
+  box-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.08),
+    0 0 16px rgba(250, 204, 21, 0.1) !important;
+
+  backdrop-filter: blur(14px) !important;
+
+  z-index: 20 !important;
+
+  animation: floatFeedback 4s ease-in-out infinite !important;
+}
+
+.dashboard-page .dashboard-container .guru-feedback-icon {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  background: linear-gradient(135deg, #facc15, #fde68a) !important;
+
+  border-radius: 12px !important;
+
+  font-size: 17px !important;
+}
+
+.dashboard-page .dashboard-container .guru-feedback-content p {
+  margin: 0 !important;
+
+  color: #334155 !important;
+
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+
+  font-weight: 700 !important;
+}
+
+.dashboard-page .dashboard-container .guru-feedback-label {
+  display: inline-block !important;
+
+  width: fit-content !important;
+
+  background: #fef3c7 !important;
+  color: #92400e !important;
+
+  padding: 6px 12px !important;
+
+  border-radius: 999px !important;
+
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+
+  margin-bottom: 0 !important;
+}
+
+.dashboard-page .dashboard-container .guru-feedback-content p {
+  margin: 0 !important;
+
+  color: #334155 !important;
+
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+
+  font-weight: 700 !important;
+}
+
+.dashboard-page .dashboard-container .guru-feedback-content small {
+  display: inline-block !important;
+
+  margin-top: 0 !important;
+
+  color: #94a3b8 !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+@keyframes floatFeedback {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}

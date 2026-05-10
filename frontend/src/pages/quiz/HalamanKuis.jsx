@@ -4,11 +4,12 @@ import KuisDragAndDrop from "./KuisDragAndDrop";
 
 const API_URL = "http://localhost:5000";
 
-function HalamanKuis({ moduleId, onFinish }) {
+function HalamanKuis({ moduleId, quizId, onFinish }) {
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState("");
+  const [savedAnswers, setSavedAnswers] = useState({});
   const [dndItems, setDndItems] = useState([]);
   const [isDndCorrect, setIsDndCorrect] = useState(false);
   const [score, setScore] = useState(0);
@@ -35,22 +36,36 @@ function HalamanKuis({ moduleId, onFinish }) {
         setQuestions([]);
         setActiveIndex(0);
         setSelectedAnswer("");
+        setSavedAnswers({});
         setDndItems([]);
         setIsDndCorrect(false);
         setScore(0);
         setFeedback(null);
 
-        const quizRes = await fetch(`${API_URL}/api/quizzes/module/${moduleId}`);
+        if (!quizId) {
+          throw new Error("ID quiz tidak ditemukan.");
+        }
+
+        const quizRes = await fetch(`${API_URL}/api/quizzes?moduleId=${moduleId}`);
 
         if (!quizRes.ok) {
           throw new Error("Quiz belum tersedia.");
         }
 
-        const quizData = await quizRes.json();
-        setQuiz(quizData);
+        const quizList = await quizRes.json();
+
+        const selectedQuiz = Array.isArray(quizList)
+          ? quizList.find((q) => String(q.id) === String(quizId))
+          : null;
+
+        if (!selectedQuiz) {
+          throw new Error("Quiz tidak ditemukan.");
+        }
+
+        setQuiz(selectedQuiz);
 
         const questionRes = await fetch(
-          `${API_URL}/api/quiz-questions?quizId=${quizData.id}`
+          `${API_URL}/api/quiz-questions?quizId=${selectedQuiz.id}`
         );
 
         if (!questionRes.ok) {
@@ -58,7 +73,34 @@ function HalamanKuis({ moduleId, onFinish }) {
         }
 
         const questionData = await questionRes.json();
-        setQuestions(Array.isArray(questionData) ? questionData : []);
+        const questionList = Array.isArray(questionData) ? questionData : [];
+
+        setQuestions(questionList);
+
+        if (userId) {
+          const answerRes = await fetch(
+            `${API_URL}/api/user-quiz-answers?user_id=${userId}&quiz_id=${selectedQuiz.id}`
+          );
+
+          if (answerRes.ok) {
+            const answerData = await answerRes.json();
+
+            const answerMap = {};
+            answerData.forEach((item) => {
+              answerMap[item.question_id] = {
+  answer: item.answer,
+  is_correct: item.is_correct === 1,
+};
+            });
+
+            setSavedAnswers(answerMap);
+
+            const firstQuestion = questionList[0];
+            if (firstQuestion && answerMap[firstQuestion.id]) {
+  setSelectedAnswer(answerMap[firstQuestion.id].answer);
+}
+          }
+        }
       } catch (err) {
         console.error("FETCH QUIZ ERROR:", err);
         showFeedback("error", "Quiz belum tersedia 😭");
@@ -67,8 +109,18 @@ function HalamanKuis({ moduleId, onFinish }) {
       }
     };
 
-    if (moduleId) fetchQuiz();
-  }, [moduleId]);
+    if (moduleId && quizId) fetchQuiz();
+  }, [moduleId, quizId, userId]);
+
+  useEffect(() => {
+    if (!activeQuestion) return;
+
+    if (activeQuestion.type === "mcq") {
+     setSelectedAnswer(
+  savedAnswers[activeQuestion.id]?.answer || ""
+);
+    }
+  }, [activeQuestion, savedAnswers]);
 
   useEffect(() => {
     const fetchDndItems = async () => {
@@ -111,6 +163,28 @@ function HalamanKuis({ moduleId, onFinish }) {
     return () => clearTimeout(timer);
   }, [feedback]);
 
+  const saveQuizAnswer = async ({ questionId, answer, isCorrect }) => {
+    if (!userId || !quiz?.id || !questionId) return;
+
+    const res = await fetch(`${API_URL}/api/user-quiz-answers`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        quiz_id: quiz.id,
+        question_id: questionId,
+        answer,
+        is_correct: isCorrect ? 1 : 0,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Gagal menyimpan jawaban.");
+    }
+  };
+
   const saveQuizResult = async (finalScore) => {
     if (!quiz || !userId) return;
 
@@ -152,6 +226,26 @@ function HalamanKuis({ moduleId, onFinish }) {
 
       if (!isCorrect) {
         showFeedback("error", "Jawaban belum tepat 😭 coba lagi yaa");
+        return;
+      }
+
+      try {
+        await saveQuizAnswer({
+          questionId: activeQuestion.id,
+          answer: selectedAnswer,
+          isCorrect: true,
+        });
+
+setSavedAnswers((prev) => ({
+  ...prev,
+  [activeQuestion.id]: {
+    answer: selectedAnswer,
+    is_correct: true,
+  },
+}));
+      } catch (err) {
+        console.error("SAVE ANSWER ERROR:", err);
+        showFeedback("error", "Jawaban benar, tapi gagal disimpan 😭");
         return;
       }
 
@@ -223,7 +317,6 @@ function HalamanKuis({ moduleId, onFinish }) {
         </div>
 
         <div style={scoreBadgeStyle}>
-          Skor:{" "}
           {questions.length
             ? Math.round((score / questions.length) * 100)
             : 0}
@@ -249,10 +342,11 @@ function HalamanKuis({ moduleId, onFinish }) {
       <div style={quizBodyStyle}>
         {activeQuestion.type === "mcq" ? (
           <MCQQuiz
-            data={activeQuestion}
-            selectedAnswer={selectedAnswer}
-            setSelectedAnswer={setSelectedAnswer}
-          />
+  data={activeQuestion}
+  selectedAnswer={selectedAnswer}
+  setSelectedAnswer={setSelectedAnswer}
+  isAnsweredCorrect={savedAnswers[activeQuestion.id]?.is_correct === true}
+/>
         ) : (
           <KuisDragAndDrop
             data={activeQuestion}

@@ -11,7 +11,12 @@ const EmptyState = ({ title, text }) => (
 
 const ArtikelMateri = ({ API_URL, text, images = [] }) => {
   if (!text) {
-    return <EmptyState title="Belum ada isi materi" text="Materi ini masih kosong." />;
+    return (
+      <EmptyState
+        title="Belum ada isi materi"
+        text="Materi ini masih kosong."
+      />
+    );
   }
 
   const parts = text.split(/(\[img\d+\])/g);
@@ -60,6 +65,33 @@ const ArtikelMateri = ({ API_URL, text, images = [] }) => {
   );
 };
 
+const QuizMateri = ({ item, HalamanKuis, moduleId, handleSelesaiDanLanjut }) => {
+  return (
+    <div className="reader-quiz-shell">
+      <div className="reader-quiz-hero">
+        <div className="reader-quiz-icon">🧠</div>
+
+        <div>
+          <span className="reader-quiz-badge">PRETEST MCQ</span>
+          <h2>{item.title}</h2>
+          <p>
+            Kerjakan kuis ini untuk mengukur pemahaman awal sebelum lanjut ke
+            materi berikutnya.
+          </p>
+        </div>
+      </div>
+
+      <div className="reader-quiz-panel">
+        <HalamanKuis
+          moduleId={moduleId}
+          quizId={item.quiz_id || item.content_url}
+          onFinish={handleSelesaiDanLanjut}
+        />
+      </div>
+    </div>
+  );
+};
+
 const KontenMateri = ({
   API_URL,
   item,
@@ -71,10 +103,17 @@ const KontenMateri = ({
   moduleId,
   handleSelesaiDanLanjut,
 }) => {
-  const coverImage = item.type === "article" && item.content_url ? item.content_url : null;
+  const coverImage =
+    item.type === "article" && item.content_url ? item.content_url : null;
 
   return (
-    <section className="reader-content-card">
+    <section
+      className={
+        item.type === "quiz"
+          ? "reader-content-card is-quiz-content"
+          : "reader-content-card"
+      }
+    >
       {item.type === "video" ? (
         videoId ? (
           <div className="reader-video-box">
@@ -91,10 +130,18 @@ const KontenMateri = ({
             />
           </div>
         ) : (
-          <EmptyState title="Video tidak valid" text="Link video pada materi ini tidak bisa dibaca." />
+          <EmptyState
+            title="Video tidak valid"
+            text="Link video pada materi ini tidak bisa dibaca."
+          />
         )
       ) : item.type === "quiz" ? (
-        <HalamanKuis moduleId={moduleId} onFinish={handleSelesaiDanLanjut} />
+        <QuizMateri
+          item={item}
+          HalamanKuis={HalamanKuis}
+          moduleId={moduleId}
+          handleSelesaiDanLanjut={handleSelesaiDanLanjut}
+        />
       ) : (
         <>
           {coverImage && (
@@ -103,7 +150,11 @@ const KontenMateri = ({
             </div>
           )}
 
-          <ArtikelMateri API_URL={API_URL} text={item.content_text} images={images} />
+          <ArtikelMateri
+            API_URL={API_URL}
+            text={item.content_text}
+            images={images}
+          />
         </>
       )}
     </section>

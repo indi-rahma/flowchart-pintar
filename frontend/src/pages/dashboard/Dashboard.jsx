@@ -20,6 +20,8 @@ const Dashboard = () => {
 
   const [modules, setModules] = useState([]);
   const [user, setUser] = useState(null);
+  const [evaluasiGuru, setEvaluasiGuru] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -93,6 +95,19 @@ const Dashboard = () => {
         });
 
         setModules(grouped);
+
+        try {
+          const evaluasiRes = await fetch(
+            `${API_BASE}/api/evaluasi/${parsedUser.id}`
+          );
+
+          if (evaluasiRes.ok) {
+            const evaluasiData = await evaluasiRes.json();
+            setEvaluasiGuru(Array.isArray(evaluasiData) ? evaluasiData : []);
+          }
+        } catch (err) {
+          console.error("Gagal fetch evaluasi guru:", err);
+        }
       } catch (err) {
         console.error("Gagal fetch dashboard:", err);
         setError(err.message || "Terjadi kesalahan saat memuat dashboard.");
@@ -143,6 +158,8 @@ const Dashboard = () => {
     };
   }, [modules]);
 
+  const evaluasiTerbaru = evaluasiGuru[0];
+
   if (loading) {
     return <TampilanLoading />;
   }
@@ -165,6 +182,32 @@ const Dashboard = () => {
           summary={summary}
           navigate={navigate}
         />
+
+        {evaluasiTerbaru && (
+          <div className="guru-feedback-floating">
+            <div className="guru-feedback-icon">💡</div>
+            <div className="guru-feedback-content">
+              <div className="guru-feedback-label">
+                PESAN GURU UNTUKMU
+              </div>
+
+              <p>{evaluasiTerbaru.evaluasi}</p>
+
+              <small>
+                {evaluasiTerbaru.created_at
+                  ? new Date(evaluasiTerbaru.created_at).toLocaleDateString(
+                      "id-ID",
+                      {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      }
+                    )
+                  : "Tanggal tidak tersedia"}
+              </small>
+            </div>
+          </div>
+        )}
 
         <DaftarModul
           modules={modules}

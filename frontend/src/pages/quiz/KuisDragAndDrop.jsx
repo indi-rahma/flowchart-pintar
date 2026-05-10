@@ -9,6 +9,10 @@ import {
   addEdge,
   useEdgesState,
   useNodesState,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getStraightPath,
+  useInternalNode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -16,8 +20,10 @@ function getNodeType(item) {
   const type = String(item?.node_type || "").toLowerCase();
   const text = String(item?.text || "").toLowerCase();
 
-  if (type === "start" || text.includes("start") || text.includes("mulai")) return "start";
-  if (type === "end" || text.includes("end") || text.includes("selesai")) return "end";
+  if (type === "start" || text.includes("start") || text.includes("mulai"))
+    return "start";
+  if (type === "end" || text.includes("end") || text.includes("selesai"))
+    return "end";
 
   if (
     type === "decision" ||
@@ -44,6 +50,115 @@ function getNodeType(item) {
   return "process";
 }
 
+function getNodeBox(node) {
+  const position =
+    node?.internals?.positionAbsolute ||
+    node?.positionAbsolute ||
+    node?.position ||
+    { x: 0, y: 0 };
+
+  const width = node?.measured?.width || node?.width || 170;
+  const height = node?.measured?.height || node?.height || 76;
+
+  return {
+    x: position.x,
+    y: position.y,
+    width,
+    height,
+    centerX: position.x + width / 2,
+    centerY: position.y + height / 2,
+  };
+}
+
+function getIntersectionPoint(fromNode, toNode) {
+  const from = getNodeBox(fromNode);
+  const to = getNodeBox(toNode);
+
+  const dx = to.centerX - from.centerX;
+  const dy = to.centerY - from.centerY;
+
+  if (dx === 0 && dy === 0) {
+    return {
+      x: from.centerX,
+      y: from.centerY,
+    };
+  }
+
+  const halfWidth = from.width / 2;
+  const halfHeight = from.height / 2;
+
+  const scaleX = dx === 0 ? Infinity : Math.abs(halfWidth / dx);
+  const scaleY = dy === 0 ? Infinity : Math.abs(halfHeight / dy);
+  const scale = Math.min(scaleX, scaleY);
+
+  return {
+    x: from.centerX + dx * scale,
+    y: from.centerY + dy * scale,
+  };
+}
+
+function FloatingEdge({
+  id,
+  source,
+  target,
+  markerEnd,
+  style,
+  label,
+  labelStyle,
+  labelBgStyle,
+}) {
+  const sourceNode = useInternalNode(source);
+  const targetNode = useInternalNode(target);
+
+  if (!sourceNode || !targetNode) return null;
+
+  const sourcePoint = getIntersectionPoint(sourceNode, targetNode);
+  const targetPoint = getIntersectionPoint(targetNode, sourceNode);
+
+  const [edgePath, labelX, labelY] = getStraightPath({
+    sourceX: sourcePoint.x,
+    sourceY: sourcePoint.y,
+    targetX: targetPoint.x,
+    targetY: targetPoint.y,
+  });
+
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{
+          strokeWidth: 3,
+          strokeLinecap: "round",
+          ...style,
+        }}
+      />
+
+      {label && (
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: "absolute",
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              padding: "4px 8px",
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 900,
+              background: labelBgStyle?.fill || "#ffffff",
+              color: labelStyle?.fill || "#111827",
+              pointerEvents: "all",
+              boxShadow: "0 6px 16px rgba(15,23,42,0.12)",
+            }}
+          >
+            {label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+    </>
+  );
+}
+
 function FlowNode({ data }) {
   const type = data?.node_type || "process";
 
@@ -59,6 +174,7 @@ function FlowNode({ data }) {
       : "PROSES";
 
   const base = {
+    position: "relative",
     minWidth: 170,
     minHeight: 76,
     padding: "14px 18px",
@@ -129,17 +245,15 @@ function FlowNode({ data }) {
       : { display: "block" };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={shape}>
       {type !== "start" && (
         <Handle type="target" position={Position.Top} style={handleStyle} />
       )}
 
-      <div style={shape}>
-        <span style={textFix}>
-          <small style={nodeTypeStyle}>{label}</small>
-          <b>{data?.label}</b>
-        </span>
-      </div>
+      <span style={textFix}>
+        <small style={nodeTypeStyle}>{label}</small>
+        <b>{data?.label}</b>
+      </span>
 
       {type === "decision" ? (
         <>
@@ -147,14 +261,16 @@ function FlowNode({ data }) {
             type="source"
             id="yes"
             position={Position.Right}
-            style={{ ...handleStyle, background: "#22c55e" }}
+            style={handleStyle}
           />
+
           <Handle
             type="source"
             id="no"
             position={Position.Bottom}
-            style={{ ...handleStyle, background: "#ef4444" }}
+            style={handleStyle}
           />
+
           <span style={yesLabelStyle}>Ya</span>
           <span style={noLabelStyle}>Tidak</span>
         </>
@@ -171,6 +287,7 @@ function FlowNode({ data }) {
 }
 
 const nodeTypes = { flowNode: FlowNode };
+const edgeTypes = { floating: FloatingEdge };
 
 function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -326,16 +443,16 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
             id: `edge-${params.source}-${params.sourceHandle || "out"}-${
               params.target
             }-${Date.now()}`,
-            type: "smoothstep",
-            animated: true,
+            type: "floating",
+            animated: false,
             label,
             markerEnd: {
               type: MarkerType.ArrowClosed,
-              color: "#6366f1",
+              color: params.sourceHandle === "no" ? "#ef4444" : "#111827",
             },
             style: {
               strokeWidth: 3,
-              stroke: params.sourceHandle === "no" ? "#ef4444" : "#6366f1",
+              stroke: params.sourceHandle === "no" ? "#ef4444" : "#111827",
             },
             labelStyle: {
               fontWeight: 900,
@@ -374,8 +491,8 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
           <p style={eyebrowStyle}>Flowchart Canvas Challenge</p>
           <h3 style={questionStyle}>{data?.question}</h3>
           <p style={hintStyle}>
-            Geser node agar rapi, lalu tarik panah dari titik kecil. Untuk
-            percabangan, gunakan jalur <b>Ya</b> dan <b>Tidak</b>.
+            Geser node agar rapi, lalu tarik dari area ujung node untuk membuat
+            koneksi. Untuk percabangan, gunakan jalur <b>Ya</b> dan <b>Tidak</b>.
           </p>
         </div>
 
@@ -395,6 +512,7 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -402,6 +520,9 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
           snapToGrid
           snapGrid={[20, 20]}
           defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
+          nodesDraggable={true}
+          nodesConnectable={true}
+          elementsSelectable={false}
         >
           <Background gap={20} size={1.2} color="#c7d2fe" />
           <Controls />
@@ -496,7 +617,8 @@ const canvasOuterStyle = {
   overflow: "hidden",
   background:
     "radial-gradient(circle at top,#eef2ff,transparent 35%),linear-gradient(180deg,#ffffff,#f8fafc)",
-  boxShadow: "inset 0 0 0 1px rgba(255,255,255,.7),0 18px 40px rgba(15,23,42,.08)",
+  boxShadow:
+    "inset 0 0 0 1px rgba(255,255,255,.7),0 18px 40px rgba(15,23,42,.08)",
 };
 
 const statusStyle = {
@@ -519,11 +641,12 @@ const emptyStyle = {
 };
 
 const handleStyle = {
-  width: 13,
-  height: 13,
-  background: "#6366f1",
-  border: "2px solid #fff",
-  boxShadow: "0 0 0 3px rgba(99,102,241,.18)",
+  width: 1,
+  height: 1,
+  background: "transparent",
+  border: "none",
+  opacity: 0,
+  boxShadow: "none",
 };
 
 const nodeTypeStyle = {
@@ -560,20 +683,17 @@ const noLabelStyle = {
 };
 
 const animationStyle = `
-.react-flow__edge-path {
-  stroke-linecap: round;
-}
-
-.react-flow__node {
-  transition: filter .2s ease;
-}
-
-.react-flow__node:hover {
-  filter: drop-shadow(0 18px 26px rgba(99,102,241,.18));
-}
-
 .react-flow__handle {
-  cursor: crosshair;
+  opacity: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__resize-control,
+.react-flow__selection,
+.react-flow__nodesselection {
+  display: none !important;
 }
 `;
 

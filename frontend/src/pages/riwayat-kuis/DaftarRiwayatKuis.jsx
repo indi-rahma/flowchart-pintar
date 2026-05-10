@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 const getEvaluasiByScore = (score) => {
   const nilai = Number(score) || 0;
@@ -42,10 +42,62 @@ const getEvaluasiByScore = (score) => {
   };
 };
 
+const getQuizCategory = (title = "") => {
+  const lower = String(title).toLowerCase();
+
+  if (lower.includes("pretest")) return "Pretest";
+  if (lower.includes("posttest")) return "Posttest";
+  if (lower.includes("quiz") || lower.includes("kuis")) return "Quiz";
+
+  return "Quiz";
+};
+
 const DaftarRiwayatKuis = ({ data = [] }) => {
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
 
-  const safeData = Array.isArray(data) ? data : [];
+  const groupedByModule = useMemo(() => {
+    const safeData = Array.isArray(data) ? data : [];
+
+    const latestByQuiz = new Map();
+
+    safeData.forEach((item) => {
+      const quizId = item?.quiz_id;
+      if (!quizId) return;
+
+      const existing = latestByQuiz.get(quizId);
+
+      const currentTime = item?.taken_at
+        ? new Date(item.taken_at).getTime()
+        : 0;
+
+      const existingTime = existing?.taken_at
+        ? new Date(existing.taken_at).getTime()
+        : 0;
+
+      if (!existing || currentTime > existingTime || item.id > existing.id) {
+        latestByQuiz.set(quizId, item);
+      }
+    });
+
+    const moduleMap = new Map();
+
+    Array.from(latestByQuiz.values()).forEach((item) => {
+      const moduleId = item?.module_id || "unknown";
+      const moduleTitle = item?.module_title || "Modul Tanpa Judul";
+
+      if (!moduleMap.has(moduleId)) {
+        moduleMap.set(moduleId, {
+          module_id: moduleId,
+          module_title: moduleTitle,
+          quizzes: [],
+        });
+      }
+
+      moduleMap.get(moduleId).quizzes.push(item);
+    });
+
+    return Array.from(moduleMap.values());
+  }, [data]);
 
   const handleOpenEvaluation = (item) => {
     const evaluation = item?.evaluation || getEvaluasiByScore(item?.score);
@@ -56,7 +108,7 @@ const DaftarRiwayatKuis = ({ data = [] }) => {
     });
   };
 
-  if (safeData.length === 0) {
+  if (groupedByModule.length === 0) {
     return (
       <div className="riwayat-empty premium-card">
         <span className="riwayat-empty-icon">📘</span>
@@ -72,85 +124,112 @@ const DaftarRiwayatKuis = ({ data = [] }) => {
         <div className="riwayat-list-title-row">
           <div>
             <h2>Riwayat Kuis</h2>
-            <p>Pantau hasil belajar dan lihat evaluasi dari setiap kuis.</p>
+            <p>
+              Menampilkan nilai terakhir Pretest dan Quiz berdasarkan setiap
+              modul.
+            </p>
           </div>
 
           <div className="riwayat-list-line"></div>
         </div>
 
         <div className="riwayat-stack-area">
-          {safeData.map((item, index) => {
-            const isPass = item?.is_pass === 1 || item?.is_pass === true;
+          {groupedByModule.map((moduleItem, moduleIndex) => (
+            <section
+              key={moduleItem.module_id}
+              className="premium-card"
+              style={{
+                padding: 20,
+                borderRadius: 22,
+                marginBottom: 18,
+                animation: `cardPop 0.4s ease forwards ${
+                  moduleIndex * 0.05
+                }s`,
+              }}
+            >
+              <h3 style={{ margin: "0 0 14px" }}>
+                {moduleItem.module_title}
+              </h3>
 
-            return (
-              <article
-                key={item?.id || index}
-                className={`riwayat-history-card ${
-                  isPass ? "is-pass" : "is-fail"
-                }`}
-                style={{
-                  animation: `cardPop 0.4s ease forwards ${index * 0.05}s`,
-                }}
-              >
-                <div className="riwayat-card-info-group">
-                  <div className="riwayat-index-box">
-                    {String(index + 1).padStart(2, "0")}
-                  </div>
+              {moduleItem.quizzes.map((item, index) => {
+                const isPass = item?.is_pass === 1 || item?.is_pass === true;
+                const category = getQuizCategory(item?.quiz_title);
 
-                  <div className="riwayat-text-group">
-                    <div className="riwayat-title-row">
-                      <h4>{item?.quiz_title || "Kuis Tanpa Judul"}</h4>
-
-                      <span
-                        className={
-                          isPass
-                            ? "riwayat-mini-tag pass"
-                            : "riwayat-mini-tag fail"
-                        }
-                      >
-                        {isPass ? "Lulus" : "Belum Lulus"}
-                      </span>
-                    </div>
-
-                    <p>
-                      Selesai pada{" "}
-                      {item?.taken_at
-                        ? new Date(item.taken_at).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : "Tanggal tidak tersedia"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="riwayat-card-result-group">
-                  <div className="riwayat-score-box">
-                    <span className="riwayat-score-label">Nilai</span>
-
-                    <div
-                      className={
-                        isPass
-                          ? "riwayat-score-number pass"
-                          : "riwayat-score-number fail"
-                      }
-                    >
-                      {item?.score ?? 0}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="riwayat-arrow-btn"
-                    onClick={() => handleOpenEvaluation(item)}
+                return (
+                  <article
+                    key={item?.id || index}
+                    className={`riwayat-history-card ${
+                      isPass ? "is-pass" : "is-fail"
+                    }`}
+                    style={{ marginBottom: 12 }}
                   >
-                    Evaluasi
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+                    <div className="riwayat-card-info-group">
+                      <div className="riwayat-index-box">
+                        {category === "Pretest" ? "P" : "Q"}
+                      </div>
+
+                      <div className="riwayat-text-group">
+                        <div className="riwayat-title-row">
+                          <h4>
+                            {category}:{" "}
+                            {item?.quiz_title || "Kuis Tanpa Judul"}
+                          </h4>
+
+                          <span
+                            className={
+                              isPass
+                                ? "riwayat-mini-tag pass"
+                                : "riwayat-mini-tag fail"
+                            }
+                          >
+                            {isPass ? "Lulus" : "Belum Lulus"}
+                          </span>
+                        </div>
+
+                        <p>
+                          Nilai terakhir pada{" "}
+                          {item?.taken_at
+                            ? new Date(item.taken_at).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                }
+                              )
+                            : "Tanggal tidak tersedia"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="riwayat-card-result-group">
+                      <div className="riwayat-score-box">
+                        <span className="riwayat-score-label">Nilai</span>
+
+                        <div
+                          className={
+                            isPass
+                              ? "riwayat-score-number pass"
+                              : "riwayat-score-number fail"
+                          }
+                        >
+                          {item?.score ?? 0}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="riwayat-arrow-btn"
+                        onClick={() => handleOpenEvaluation(item)}
+                      >
+                        Evaluasi
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </section>
+          ))}
         </div>
       </main>
 
@@ -182,7 +261,7 @@ const DaftarRiwayatKuis = ({ data = [] }) => {
               </div>
 
               <div>
-                <span>Status</span>
+                <span>Status: </span>
                 <strong>
                   {selectedEvaluation?.is_pass === 1 ||
                   selectedEvaluation?.is_pass === true

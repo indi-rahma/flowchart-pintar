@@ -6,21 +6,24 @@ import McqForm from "./quiz/McqForm";
 function GuruQuiz() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const moduleId = Number(id);
   const API_BASE = "http://localhost:5000";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [quiz, setQuiz] = useState(null);
+  const [quizzes, setQuizzes] = useState([]);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [passingScore, setPassingScore] = useState(75);
   const [quizType, setQuizType] = useState("mcq");
   const [isCreatingQuiz, setIsCreatingQuiz] = useState(false);
+  const [isAttachingQuizId, setIsAttachingQuizId] = useState(null);
 
-  const [builderMode, setBuilderMode] = useState("choose");
+  const [builderMode, setBuilderMode] = useState("list");
 
   const [questions, setQuestions] = useState([]);
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
@@ -51,7 +54,12 @@ function GuruQuiz() {
     node_type: "process",
   });
 
-  const quizReady = useMemo(() => !!quiz?.id, [quiz]);
+  const quizReady = useMemo(() => !!selectedQuiz?.id, [selectedQuiz]);
+
+  const safeJson = async (res) => {
+    const text = await res.text();
+    return text ? JSON.parse(text) : {};
+  };
 
   const getImageUrl = (path) => {
     if (!path) return "";
@@ -74,11 +82,6 @@ function GuruQuiz() {
     });
   };
 
-  const safeJson = async (res) => {
-    const text = await res.text();
-    return text ? JSON.parse(text) : {};
-  };
-
   const fetchQuizData = async () => {
     try {
       setLoading(true);
@@ -87,26 +90,42 @@ function GuruQuiz() {
       const res = await fetch(`${API_BASE}/api/quizzes?moduleId=${moduleId}`);
       const data = await safeJson(res);
 
-      const q = Array.isArray(data) ? data[0] : data;
-      setQuiz(q);
-
-      if (!q) {
-        setQuestions([]);
-        return;
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal load quiz");
       }
 
-      setQuizType(q.quiz_type || "mcq");
-      setBuilderMode("choose");
+      const quizList = Array.isArray(data) ? data : [];
+      setQuizzes(quizList);
 
-      const qRes = await fetch(`${API_BASE}/api/quiz-questions?quizId=${q.id}`);
-      const qData = await safeJson(qRes);
-
-      setQuestions(Array.isArray(qData) ? qData : []);
+      if (selectedQuiz?.id) {
+        const stillExists = quizList.find(
+          (q) => String(q.id) === String(selectedQuiz.id)
+        );
+        if (stillExists) {
+          setSelectedQuiz(stillExists);
+        }
+      }
     } catch (err) {
       console.error(err);
       setError("Gagal load quiz");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchQuestionsByQuiz = async (quizItem) => {
+    if (!quizItem?.id) return;
+
+    try {
+      const qRes = await fetch(
+        `${API_BASE}/api/quiz-questions?quizId=${quizItem.id}`
+      );
+      const qData = await safeJson(qRes);
+
+      setQuestions(Array.isArray(qData) ? qData : []);
+    } catch (err) {
+      console.error(err);
+      setQuestions([]);
     }
   };
 
@@ -116,6 +135,11 @@ function GuruQuiz() {
 
   const handleCreateQuiz = async (e) => {
     e.preventDefault();
+
+    if (!title.trim()) {
+      alert("Judul quiz wajib diisi");
+      return;
+    }
 
     try {
       setIsCreatingQuiz(true);
@@ -134,26 +158,108 @@ function GuruQuiz() {
 
       const data = await safeJson(res);
 
-      setQuiz(data);
-      setBuilderMode("choose");
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal membuat quiz");
+      }
+
+      setTitle("");
+      setDescription("");
+      setPassingScore(75);
+      setQuizType("mcq");
+
+      await fetchQuizData();
+      alert("Quiz berhasil dibuat ✅");
     } catch (err) {
       console.error(err);
-      alert("Gagal membuat quiz");
+      alert(err.message || "Gagal membuat quiz");
     } finally {
       setIsCreatingQuiz(false);
     }
   };
 
+  const handleSelectQuiz = async (quizItem) => {
+    setSelectedQuiz(quizItem);
+    setQuizType(quizItem.quiz_type || "mcq");
+    setBuilderMode("builder");
+    setDndQuestionId(null);
+    setDndQuestion("");
+    setDndItems([]);
+    resetMcqForm();
+
+    await fetchQuestionsByQuiz(quizItem);
+  };
+
+  const handleAttachQuizToModule = async (quizItem) => {
+  if (!quizItem?.id) return;
+
+  try {
+    setIsAttachingQuizId(quizItem.id);
+
+    const qRes = await fetch(
+      `${API_BASE}/api/quiz-questions?quizId=${quizItem.id}`
+    );
+    const qData = await safeJson(qRes);
+
+    if (!qRes.ok) {
+      throw new Error(qData.message || "Gagal mengecek jumlah soal quiz");
+    }
+
+    const questionList = Array.isArray(qData) ? qData : [];
+
+    if (questionList.length === 0) {
+      alert("Quiz ini belum punya soal. Tambahkan 1 soal dulu ya.");
+      return;
+    }
+
+    if (questionList.length > 1) {
+      alert(
+        "Quiz ini punya lebih dari 1 soal. Kalau mau pretest 1 soal, buat quiz baru khusus pretest lalu isi 1 soal saja."
+      );
+      return;
+    }
+
+    const res = await fetch(`${API_BASE}/api/module-items`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+body: JSON.stringify({
+  module_id: moduleId,
+  title: `Yuk Latihan!: ${quizItem.title || quizItem.quiz_title || "Quiz"}`,
+  type: "quiz",
+  content_text: "Kerjakan quiz ini sebelum mulai materi.",
+  quiz_id: quizItem.id,
+  order_index: 0,
+  is_locked: 0,
+}),
+    });
+
+    const data = await safeJson(res);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Gagal memasukkan quiz ke modul");
+    }
+
+    alert("Quiz 1 soal berhasil dimasukkan ke daftar materi ✅");
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Gagal memasukkan quiz ke modul");
+  } finally {
+    setIsAttachingQuizId(null);
+  }
+};
+
   const buildMcqFormData = () => {
     const formData = new FormData();
 
-    formData.append("quiz_id", quiz.id);
+    formData.append("quiz_id", selectedQuiz.id);
     formData.append("question", mcqForm.question);
     formData.append("option_a", mcqForm.option_a);
     formData.append("option_b", mcqForm.option_b);
     formData.append("option_c", mcqForm.option_c);
     formData.append("option_d", mcqForm.option_d);
     formData.append("correct_answer", mcqForm.correct_answer);
+    formData.append("type", "mcq");
 
     if (mcqForm.image) formData.append("image", mcqForm.image);
     if (mcqForm.option_a_image) {
@@ -176,7 +282,7 @@ function GuruQuiz() {
     e.preventDefault();
 
     if (!quizReady) {
-      alert("Quiz belum tersedia");
+      alert("Pilih quiz dulu");
       return;
     }
 
@@ -194,10 +300,8 @@ function GuruQuiz() {
         throw new Error("Gagal simpan soal");
       }
 
-      await fetchQuizData();
+      await fetchQuestionsByQuiz(selectedQuiz);
       resetMcqForm();
-      setBuilderMode("builder");
-      setQuizType("mcq");
     } catch (err) {
       console.error(err);
       alert("Gagal menyimpan soal MCQ");
@@ -225,16 +329,13 @@ function GuruQuiz() {
       });
 
       const responseText = await res.text();
-      console.log("UPDATE RESPONSE:", responseText);
 
       if (!res.ok) {
         throw new Error(responseText || "Gagal update soal");
       }
 
-      await fetchQuizData();
+      await fetchQuestionsByQuiz(selectedQuiz);
       resetMcqForm();
-      setBuilderMode("builder");
-      setQuizType("mcq");
     } catch (err) {
       console.error("UPDATE MCQ FRONTEND ERROR:", err);
       alert("Gagal update soal MCQ: " + err.message);
@@ -247,7 +348,7 @@ function GuruQuiz() {
     e.preventDefault();
 
     if (!quizReady) {
-      alert("Quiz belum tersedia");
+      alert("Pilih quiz dulu");
       return;
     }
 
@@ -263,14 +364,13 @@ function GuruQuiz() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          quiz_id: quiz.id,
+          quiz_id: selectedQuiz.id,
           question: dndQuestion,
           type: "dnd",
         }),
       });
 
       const data = await safeJson(res);
-      console.log("DND QUESTION RESPONSE:", data);
 
       if (!res.ok) {
         throw new Error(data.message || "Gagal membuat pertanyaan DND");
@@ -285,17 +385,13 @@ function GuruQuiz() {
         data.data?.insertId;
 
       if (!newId) {
-        alert("Pertanyaan masuk database, tapi backend tidak mengirim ID. Cek console DND QUESTION RESPONSE.");
+        alert("Pertanyaan masuk database, tapi backend tidak mengirim ID.");
         return;
       }
 
       setDndQuestionId(newId);
       setDndItems([]);
-      setDndItemForm((prev) => ({
-        text: "",
-        correct_order: Number(prev.correct_order) + 1,
-        node_type: "process",
-      }));
+      await fetchQuestionsByQuiz(selectedQuiz);
     } catch (err) {
       console.error(err);
       alert("Gagal membuat pertanyaan DND: " + err.message);
@@ -322,6 +418,7 @@ function GuruQuiz() {
           question_id: dndQuestionId,
           text: dndItemForm.text,
           correct_order: Number(dndItemForm.correct_order),
+          node_type: dndItemForm.node_type || "process",
         }),
       });
 
@@ -334,8 +431,10 @@ function GuruQuiz() {
       setDndItems((prev) => [...prev, data]);
 
       setDndItemForm((prev) => ({
+        ...prev,
         text: "",
         correct_order: Number(prev.correct_order) + 1,
+        node_type: "process",
       }));
     } finally {
       setIsSavingDndItem(false);
@@ -343,8 +442,6 @@ function GuruQuiz() {
   };
 
   if (loading) return <p style={{ padding: 40 }}>Loading...</p>;
-
-  const selectedType = quizType;
 
   return (
     <div style={styles.page}>
@@ -354,158 +451,187 @@ function GuruQuiz() {
         <div>
           <h1 style={styles.title}>Kelola Quiz</h1>
           <p style={styles.subtitle}>
-            Buat quiz MCQ atau Drag & Drop dengan flow editor.
+            Buat quiz MCQ atau Drag & Drop. Setiap quiz bisa dimasukkan ke modul
+            satu per satu.
           </p>
         </div>
 
-        <button type="button" style={styles.backModuleBtn} onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          style={styles.backModuleBtn}
+          onClick={() => navigate(-1)}
+        >
           ← Kembali
         </button>
       </div>
 
       {error && <div style={styles.errorBox}>{error}</div>}
 
-      {!quiz ? (
-        <form onSubmit={handleCreateQuiz} style={styles.createCard}>
-          <div>
-            <h2 style={styles.cardTitle}>Buat Quiz Baru</h2>
+      <form onSubmit={handleCreateQuiz} style={styles.createCard}>
+        <div>
+          <h2 style={styles.cardTitle}>Buat Quiz Baru</h2>
+          <p style={styles.cardSubtitle}>
+            Buat quiz terpisah. Misalnya: Pretest MCQ, Latihan DND, atau Quiz
+            Akhir.
+          </p>
+        </div>
+
+        <input
+          name="quiz-title"
+          style={styles.input}
+          placeholder="Judul quiz"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+
+        <textarea
+          name="quiz-description"
+          style={styles.textarea}
+          placeholder="Deskripsi quiz"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+
+        <input
+          name="passing-score"
+          style={styles.input}
+          type="number"
+          min="0"
+          max="100"
+          value={passingScore}
+          onChange={(e) => setPassingScore(Number(e.target.value))}
+          placeholder="Passing score"
+        />
+
+        <div style={styles.chooseWrap}>
+          <button
+            type="button"
+            onClick={() => setQuizType("mcq")}
+            style={{
+              ...styles.bigChooseCard,
+              ...(quizType === "mcq" ? styles.activeChooseCard : {}),
+            }}
+          >
+            <span style={styles.chooseIcon}>📝</span>
+            <strong>MCQ</strong>
+            <small>Pilihan ganda</small>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setQuizType("dnd")}
+            style={{
+              ...styles.bigChooseCard,
+              ...(quizType === "dnd" ? styles.activeChooseCard : {}),
+            }}
+          >
+            <span style={styles.chooseIcon}>🧩</span>
+            <strong>DND</strong>
+            <small>Drag & Drop flowchart</small>
+          </button>
+        </div>
+
+        <button type="submit" style={styles.primaryBtn} disabled={isCreatingQuiz}>
+          {isCreatingQuiz ? "Membuat Quiz..." : "✨ Buat Quiz"}
+        </button>
+      </form>
+
+      <section style={styles.quizListSection}>
+        <h2 style={styles.cardTitle}>Daftar Quiz Modul Ini</h2>
+
+        {quizzes.length === 0 ? (
+          <div style={styles.emptyBox}>Belum ada quiz di modul ini.</div>
+        ) : (
+          <div style={styles.quizGrid}>
+            {quizzes.map((quizItem) => (
+              <article key={quizItem.id} style={styles.quizCard}>
+                <div>
+                  <span style={styles.quizBadge}>
+                    {(quizItem.quiz_type || "mcq").toUpperCase()}
+                  </span>
+                  <h3 style={styles.quizTitle}>
+                    {quizItem.title || `Quiz #${quizItem.id}`}
+                  </h3>
+                  <p style={styles.quizDesc}>
+                    {quizItem.description || "Tidak ada deskripsi."}
+                  </p>
+                  <small style={styles.quizMeta}>
+                    Passing score: {quizItem.passing_score || 75}
+                  </small>
+                </div>
+
+                <div style={styles.quizActions}>
+                  <button
+                    type="button"
+                    style={styles.secondaryBtn}
+                    onClick={() => handleSelectQuiz(quizItem)}
+                  >
+                    Kelola Quiz
+                  </button>
+
+                  <button
+                    type="button"
+                    style={styles.attachBtn}
+                    onClick={() => handleAttachQuizToModule(quizItem)}
+                    disabled={isAttachingQuizId === quizItem.id}
+                  >
+                    {isAttachingQuizId === quizItem.id
+                      ? "Memasukkan..."
+                      : "Masukkan ke Modul"}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {builderMode === "builder" && selectedQuiz && (
+        <section style={styles.builderPanel}>
+          <button
+            type="button"
+            onClick={() => {
+              setBuilderMode("list");
+              setSelectedQuiz(null);
+              setQuestions([]);
+            }}
+            style={styles.backBtn}
+          >
+            ← Kembali ke daftar quiz
+          </button>
+
+          <div style={styles.selectedQuizHeader}>
+            <h2 style={styles.cardTitle}>{selectedQuiz.title}</h2>
             <p style={styles.cardSubtitle}>
-              Pilih tipe quiz awal. Setelah quiz dibuat, kamu bisa masuk ke builder.
+              Tipe: {(selectedQuiz.quiz_type || quizType).toUpperCase()}
             </p>
           </div>
 
-          <input
-            style={styles.input}
-            placeholder="Judul quiz"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-
-          <textarea
-            style={styles.textarea}
-            placeholder="Deskripsi quiz"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-
-          <input
-            style={styles.input}
-            type="number"
-            min="0"
-            max="100"
-            value={passingScore}
-            onChange={(e) => setPassingScore(Number(e.target.value))}
-            placeholder="Passing score"
-          />
-
-          <div style={styles.chooseWrap}>
-            <button
-              type="button"
-              onClick={() => setQuizType("mcq")}
-              style={{
-                ...styles.bigChooseCard,
-                ...(quizType === "mcq" ? styles.activeChooseCard : {}),
-              }}
-            >
-              <span style={styles.chooseIcon}>📝</span>
-              <strong>MCQ</strong>
-              <small>Pilihan ganda</small>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setQuizType("dnd")}
-              style={{
-                ...styles.bigChooseCard,
-                ...(quizType === "dnd" ? styles.activeChooseCard : {}),
-              }}
-            >
-              <span style={styles.chooseIcon}>🧩</span>
-              <strong>DND</strong>
-              <small>Drag & Drop flowchart</small>
-            </button>
-          </div>
-
-          <button type="submit" style={styles.primaryBtn} disabled={isCreatingQuiz}>
-            {isCreatingQuiz ? "Membuat Quiz..." : "✨ Buat Quiz"}
-          </button>
-        </form>
-      ) : (
-        <>
-          {builderMode === "choose" ? (
-            <div style={styles.builderChoose}>
-              <div style={styles.builderHeader}>
-                <h2 style={styles.cardTitle}>Pilih Jenis Kuis yang Ingin Anda Buat</h2>
-                <p style={styles.cardSubtitle}>
-                  Mau tambah soal pilihan ganda atau flowchart drag & drop?
-                </p>
-              </div>
-
-              <div style={styles.chooseWrap}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuizType("mcq");
-                    setBuilderMode("builder");
-                  }}
-                  style={styles.bigChooseCard}
-                >
-                  <span style={styles.chooseIcon}>📝</span>
-                  <strong>Tambah MCQ</strong>
-                  <small>Buat soal pilihan ganda</small>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuizType("dnd");
-                    setBuilderMode("builder");
-                  }}
-                  style={styles.bigChooseCard}
-                >
-                  <span style={styles.chooseIcon}>🧩</span>
-                  <strong>Tambah DND</strong>
-                  <small>Buat soal flowchart</small>
-                </button>
-              </div>
-            </div>
+          {(selectedQuiz.quiz_type || quizType) === "mcq" ? (
+            <McqForm
+              mcqForm={mcqForm}
+              setMcqForm={setMcqForm}
+              getImageUrl={getImageUrl}
+              questions={questions}
+              isSavingQuestion={isSavingQuestion}
+              handleSaveMcqQuestion={handleSaveMcqQuestion}
+              handleUpdateMcqQuestion={handleUpdateMcqQuestion}
+            />
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setBuilderMode("choose")}
-                style={styles.backBtn}
-              >
-                ← Pilih lagi
-              </button>
-
-              {selectedType === "mcq" ? (
-                <McqForm
-                  mcqForm={mcqForm}
-                  setMcqForm={setMcqForm}
-                  getImageUrl={getImageUrl}
-                  questions={questions}
-                  isSavingQuestion={isSavingQuestion}
-                  handleSaveMcqQuestion={handleSaveMcqQuestion}
-                  handleUpdateMcqQuestion={handleUpdateMcqQuestion}
-                />
-              ) : (
-                <DndForm
-                  dndQuestion={dndQuestion}
-                  setDndQuestion={setDndQuestion}
-                  dndQuestionId={dndQuestionId}
-                  dndItemForm={dndItemForm}
-                  setDndItemForm={setDndItemForm}
-                  dndItems={dndItems}
-                  isSavingDndQuestion={isSavingDndQuestion}
-                  isSavingDndItem={isSavingDndItem}
-                  handleSaveDndQuestion={handleSaveDndQuestion}
-                  handleSaveDndItem={handleSaveDndItem}
-                />
-              )}
-            </>
+            <DndForm
+              dndQuestion={dndQuestion}
+              setDndQuestion={setDndQuestion}
+              dndQuestionId={dndQuestionId}
+              dndItemForm={dndItemForm}
+              setDndItemForm={setDndItemForm}
+              dndItems={dndItems}
+              isSavingDndQuestion={isSavingDndQuestion}
+              isSavingDndItem={isSavingDndItem}
+              handleSaveDndQuestion={handleSaveDndQuestion}
+              handleSaveDndItem={handleSaveDndItem}
+            />
           )}
-        </>
+        </section>
       )}
     </div>
   );
@@ -520,7 +646,6 @@ const styles = {
     fontFamily: "Inter, system-ui, sans-serif",
     color: "#422006",
   },
-
   topBar: {
     marginBottom: 28,
     padding: 28,
@@ -531,31 +656,18 @@ const styles = {
     alignItems: "center",
     gap: 20,
     boxShadow: "0 22px 45px rgba(245, 158, 11, 0.32)",
-    animation: "fadeUp 0.45s ease both",
   },
-
-  eyebrow: {
-    margin: "0 0 6px",
-    fontSize: 13,
-    fontWeight: 900,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    color: "#78350f",
-  },
-
   title: {
     margin: 0,
     fontSize: 36,
     fontWeight: 900,
     color: "#422006",
   },
-
   subtitle: {
     margin: "8px 0 0",
     color: "#713f12",
     fontSize: 14,
   },
-
   backModuleBtn: {
     padding: "12px 16px",
     borderRadius: 999,
@@ -564,12 +676,10 @@ const styles = {
     color: "#422006",
     fontWeight: 900,
     cursor: "pointer",
-    transition: "0.25s ease",
   },
-
   createCard: {
-    maxWidth: 760,
-    margin: "0 auto",
+    maxWidth: 860,
+    margin: "0 auto 28px",
     padding: 28,
     borderRadius: 28,
     background: "rgba(255,255,255,0.92)",
@@ -578,35 +688,18 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 16,
-    animation: "fadeUp 0.5s ease both",
   },
-
-  builderChoose: {
-    padding: 28,
-    borderRadius: 28,
-    background: "rgba(255,255,255,0.88)",
-    border: "1px solid rgba(251,191,36,0.4)",
-    boxShadow: "0 18px 45px rgba(120,53,15,0.10)",
-    animation: "fadeUp 0.5s ease both",
-  },
-
-  builderHeader: {
-    marginBottom: 20,
-  },
-
   cardTitle: {
     margin: 0,
     fontSize: 24,
     fontWeight: 900,
     color: "#422006",
   },
-
   cardSubtitle: {
     margin: "6px 0 0",
     color: "#92400e",
     fontSize: 14,
   },
-
   input: {
     width: "100%",
     boxSizing: "border-box",
@@ -617,9 +710,7 @@ const styles = {
     outline: "none",
     color: "#422006",
     fontSize: 14,
-    transition: "0.25s ease",
   },
-
   textarea: {
     width: "100%",
     boxSizing: "border-box",
@@ -632,9 +723,36 @@ const styles = {
     color: "#422006",
     fontSize: 14,
     resize: "vertical",
-    transition: "0.25s ease",
   },
-
+  chooseWrap: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 20,
+    marginTop: 8,
+  },
+  bigChooseCard: {
+    padding: 24,
+    borderRadius: 24,
+    border: "1px solid #fde68a",
+    background: "linear-gradient(180deg, #ffffff, #fffbeb)",
+    boxShadow: "0 12px 28px rgba(120,53,15,0.10)",
+    cursor: "pointer",
+    fontSize: 18,
+    fontWeight: 900,
+    textAlign: "center",
+    color: "#422006",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    alignItems: "center",
+  },
+  activeChooseCard: {
+    border: "2px solid #f59e0b",
+    background: "linear-gradient(135deg, #fef3c7, #fffbeb)",
+  },
+  chooseIcon: {
+    fontSize: 42,
+  },
   primaryBtn: {
     marginTop: 8,
     padding: "15px 18px",
@@ -645,46 +763,89 @@ const styles = {
     fontWeight: 900,
     fontSize: 15,
     cursor: "pointer",
-    boxShadow: "0 14px 25px rgba(249,115,22,0.32)",
-    transition: "0.25s ease",
   },
-
-  chooseWrap: {
+  quizListSection: {
+    maxWidth: 1100,
+    margin: "0 auto",
+  },
+  quizGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 20,
-    marginTop: 8,
+    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+    gap: 18,
+    marginTop: 16,
   },
-
-  bigChooseCard: {
-    padding: 30,
-    borderRadius: 24,
-    border: "1px solid #fde68a",
-    background: "linear-gradient(180deg, #ffffff, #fffbeb)",
-    boxShadow: "0 12px 28px rgba(120,53,15,0.10)",
-    cursor: "pointer",
-    fontSize: 18,
-    fontWeight: 900,
-    textAlign: "center",
-    transition: "all 0.25s ease",
-    color: "#422006",
+  quizCard: {
+    background: "rgba(255,255,255,0.94)",
+    border: "1px solid rgba(251,191,36,0.5)",
+    borderRadius: 22,
+    padding: 20,
+    boxShadow: "0 14px 32px rgba(120,53,15,0.10)",
     display: "flex",
     flexDirection: "column",
-    gap: 8,
-    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
   },
-
-  activeChooseCard: {
-    border: "2px solid #f59e0b",
-    background: "linear-gradient(135deg, #fef3c7, #fffbeb)",
-    boxShadow: "0 16px 34px rgba(245,158,11,0.24)",
+  quizBadge: {
+    display: "inline-block",
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: "#fef3c7",
+    color: "#92400e",
+    fontSize: 11,
+    fontWeight: 900,
   },
-
-  chooseIcon: {
-    fontSize: 42,
-    marginBottom: 4,
+  quizTitle: {
+    margin: "12px 0 6px",
+    fontSize: 20,
+    fontWeight: 900,
   },
-
+  quizDesc: {
+    margin: 0,
+    color: "#92400e",
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+  quizMeta: {
+    display: "block",
+    marginTop: 10,
+    color: "#a16207",
+    fontWeight: 800,
+  },
+  quizActions: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  secondaryBtn: {
+    flex: 1,
+    border: "1px solid #f59e0b",
+    background: "#fff7ed",
+    color: "#92400e",
+    padding: "12px 14px",
+    borderRadius: 14,
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  attachBtn: {
+    flex: 1,
+    border: "none",
+    background: "#f59e0b",
+    color: "#ffffff",
+    padding: "12px 14px",
+    borderRadius: 14,
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  builderPanel: {
+    marginTop: 30,
+    padding: 24,
+    borderRadius: 28,
+    background: "rgba(255,255,255,0.9)",
+    border: "1px solid rgba(251,191,36,0.4)",
+  },
+  selectedQuizHeader: {
+    marginBottom: 20,
+  },
   backBtn: {
     marginBottom: 20,
     padding: "11px 16px",
@@ -694,10 +855,16 @@ const styles = {
     color: "#92400e",
     fontWeight: 900,
     cursor: "pointer",
-    transition: "0.25s ease",
-    boxShadow: "0 8px 18px rgba(245,158,11,0.16)",
   },
-
+  emptyBox: {
+    marginTop: 16,
+    padding: 24,
+    borderRadius: 22,
+    background: "rgba(255,255,255,0.8)",
+    border: "1px dashed #f59e0b",
+    color: "#92400e",
+    fontWeight: 800,
+  },
   errorBox: {
     marginBottom: 18,
     padding: 14,
@@ -709,17 +876,6 @@ const styles = {
 };
 
 const animationStyles = `
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 button:hover {
   transform: translateY(-3px);
   filter: brightness(1.03);
@@ -733,8 +889,8 @@ select:focus {
   background: #ffffff !important;
 }
 
-@media (max-width: 900px) {
-  .dummy {}
+button {
+  transition: 0.25s ease;
 }
 `;
 

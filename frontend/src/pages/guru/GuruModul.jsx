@@ -4,21 +4,18 @@ import { useNavigate } from "react-router-dom";
 function GuruModul() {
   const navigate = useNavigate();
 
-  // =========================
-  // STATE
-  // =========================
   const [modules, setModules] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Modal modul
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [moduleTitle, setModuleTitle] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
   const [isSubmittingModule, setIsSubmittingModule] = useState(false);
 
-  // Modal materi
   const [showItemModal, setShowItemModal] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [itemTitle, setItemTitle] = useState("");
@@ -26,19 +23,14 @@ function GuruModul() {
   const [itemContentText, setItemContentText] = useState("");
   const [itemContentUrl, setItemContentUrl] = useState("");
   const [itemOrderIndex, setItemOrderIndex] = useState(0);
+  const [selectedQuizId, setSelectedQuizId] = useState("");
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
   const [itemImages, setItemImages] = useState([]);
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id;
 
-  // =========================
-  // HELPERS
-  // =========================
   const normalizeModules = (data) => {
-    // Support 2 kemungkinan bentuk response:
-    // 1. modules sudah nested [{ id, title, description, items: [...] }]
-    // 2. hasil join flat dari modules + module_items
     if (!Array.isArray(data)) return [];
 
     const alreadyNested = data.every(
@@ -57,7 +49,6 @@ function GuruModul() {
       }));
     }
 
-    // fallback: bentuk flat / join
     const grouped = Object.values(
       data.reduce((acc, row) => {
         const moduleId = row.module_id || row.id;
@@ -71,7 +62,6 @@ function GuruModul() {
           };
         }
 
-        // kalau row mengandung item materi
         if (
           row.item_id ||
           row.type ||
@@ -96,9 +86,6 @@ function GuruModul() {
     return grouped;
   };
 
-  // =========================
-  // FETCH MODULES
-  // =========================
   const getModules = async () => {
     if (!userId) {
       setLoading(false);
@@ -114,14 +101,10 @@ function GuruModul() {
         `http://localhost:5000/api/modules?userId=${userId}`
       );
 
-      if (!res.ok) {
-        throw new Error("Gagal mengambil data modul.");
-      }
+      if (!res.ok) throw new Error("Gagal mengambil data modul.");
 
       const data = await res.json();
-      const normalized = normalizeModules(data);
-
-      setModules(normalized);
+      setModules(normalizeModules(data));
     } catch (err) {
       console.error("GET MODULES ERROR:", err);
       setError(err.message || "Terjadi kesalahan saat mengambil modul.");
@@ -130,13 +113,33 @@ function GuruModul() {
     }
   };
 
+  const getQuizzesByModule = async (moduleId) => {
+    if (!moduleId) return;
+
+    try {
+      setLoadingQuiz(true);
+      setQuizzes([]);
+
+      const res = await fetch(
+        `http://localhost:5000/api/quizzes?moduleId=${moduleId}`
+      );
+
+      if (!res.ok) throw new Error("Gagal mengambil data quiz.");
+
+      const data = await res.json();
+      setQuizzes(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("GET QUIZZES ERROR:", err);
+      setQuizzes([]);
+    } finally {
+      setLoadingQuiz(false);
+    }
+  };
+
   useEffect(() => {
     getModules();
   }, [userId]);
 
-  // =========================
-  // CREATE MODULE
-  // =========================
   const handleTambahModul = async (e) => {
     e.preventDefault();
 
@@ -160,9 +163,7 @@ function GuruModul() {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("Gagal menyimpan modul baru.");
-      }
+      if (!res.ok) throw new Error("Gagal menyimpan modul baru.");
 
       setModuleTitle("");
       setModuleDescription("");
@@ -177,112 +178,136 @@ function GuruModul() {
     }
   };
 
-  // =========================
-  // OPEN ITEM MODAL
-  // =========================
-  const openTambahMateriModal = (moduleId) => {
+  const openTambahMateriModal = async (moduleId) => {
     setSelectedModuleId(moduleId);
     setItemTitle("");
     setItemType("text");
     setItemContentText("");
     setItemContentUrl("");
     setItemOrderIndex(0);
+    setSelectedQuizId("");
     setItemImages([]);
+    setQuizzes([]);
     setShowItemModal(true);
+
+    await getQuizzesByModule(moduleId);
   };
 
-  // =========================
-  // CREATE MODULE ITEM
-  // =========================
- const handleTambahMateri = async (e) => {
-  e.preventDefault();
+  const handleItemTypeChange = (e) => {
+    const nextType = e.target.value;
 
-  if (!selectedModuleId) {
-    alert("Module tidak ditemukan.");
-    return;
-  }
-
-  if (!itemTitle.trim()) {
-    alert("Judul materi wajib diisi.");
-    return;
-  }
-
-  if (itemType === "text" && !itemContentText.trim()) {
-    alert("Isi materi text wajib diisi.");
-    return;
-  }
-
-  if (
-    (itemType === "video" || itemType === "file" || itemType === "link") &&
-    !itemContentUrl.trim()
-  ) {
-    alert("URL materi wajib diisi untuk tipe ini.");
-    return;
-  }
-
-  try {
-    setIsSubmittingItem(true);
-
-    const payload = {
-      module_id: selectedModuleId,
-      title: itemTitle,
-      type: itemType,
-      content_text: itemContentText,
-      content_url: itemContentUrl,
-      order_index: Number(itemOrderIndex) || 0,
-    };
-
-    const res = await fetch("http://localhost:5000/api/module-items", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      throw new Error("Gagal menyimpan materi.");
-    }
-
-    const data = await res.json();
-
-    // 🔥 UPLOAD MULTIPLE IMAGE
-    if (itemImages.length > 0) {
-      for (let i = 0; i < itemImages.length; i++) {
-        const formData = new FormData();
-        formData.append("material_id", data.id);
-        formData.append("image", itemImages[i]);
-        formData.append("image_order", i + 1);
-
-        await fetch("http://localhost:5000/api/material-images", {
-          method: "POST",
-          body: formData,
-        });
-      }
-    }
-
-    // RESET
-    setShowItemModal(false);
-    setSelectedModuleId(null);
-    setItemTitle("");
-    setItemType("text");
+    setItemType(nextType);
     setItemContentText("");
     setItemContentUrl("");
-    setItemOrderIndex(0);
-    setItemImages([]);
+    setSelectedQuizId("");
 
-    await getModules();
-  } catch (err) {
-    console.error("CREATE MODULE ITEM ERROR:", err);
-    alert(err.message || "Gagal menambahkan materi.");
-  } finally {
-    setIsSubmittingItem(false);
-  }
-};
+    if (nextType === "quiz") {
+      setItemTitle("Pretest");
+      setItemOrderIndex(0);
+    }
+  };
 
-  // =========================
-  // FILTER
-  // =========================
+  const handleQuizChange = (e) => {
+    const quizId = e.target.value;
+    setSelectedQuizId(quizId);
+
+    const selectedQuiz = quizzes.find((quiz) => String(quiz.id) === quizId);
+
+    if (selectedQuiz) {
+      setItemTitle(selectedQuiz.title || selectedQuiz.quiz_title || "Quiz");
+      setItemContentUrl(String(selectedQuiz.id));
+    }
+  };
+
+  const handleTambahMateri = async (e) => {
+    e.preventDefault();
+
+    if (!selectedModuleId) {
+      alert("Module tidak ditemukan.");
+      return;
+    }
+
+    if (!itemTitle.trim()) {
+      alert("Judul materi wajib diisi.");
+      return;
+    }
+
+    if (itemType === "quiz" && !selectedQuizId) {
+      alert("Pilih quiz terlebih dahulu.");
+      return;
+    }
+
+    if (itemType === "text" && !itemContentText.trim()) {
+      alert("Isi materi text wajib diisi.");
+      return;
+    }
+
+    if (
+      (itemType === "video" || itemType === "file" || itemType === "link") &&
+      !itemContentUrl.trim()
+    ) {
+      alert("URL materi wajib diisi untuk tipe ini.");
+      return;
+    }
+
+    try {
+      setIsSubmittingItem(true);
+
+      const payload = {
+        module_id: selectedModuleId,
+        title: itemTitle,
+        type: itemType,
+        content_text: itemType === "quiz" ? "" : itemContentText,
+        content_url: itemType === "quiz" ? String(selectedQuizId) : itemContentUrl,
+        order_index: Number(itemOrderIndex) || 0,
+      };
+
+      const res = await fetch("http://localhost:5000/api/module-items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Gagal menyimpan materi.");
+
+      const data = await res.json();
+
+      if (itemType !== "quiz" && itemImages.length > 0) {
+        for (let i = 0; i < itemImages.length; i++) {
+          const formData = new FormData();
+          formData.append("material_id", data.id);
+          formData.append("image", itemImages[i]);
+          formData.append("image_order", i + 1);
+
+          await fetch("http://localhost:5000/api/material-images", {
+            method: "POST",
+            body: formData,
+          });
+        }
+      }
+
+      setShowItemModal(false);
+      setSelectedModuleId(null);
+      setItemTitle("");
+      setItemType("text");
+      setItemContentText("");
+      setItemContentUrl("");
+      setItemOrderIndex(0);
+      setSelectedQuizId("");
+      setItemImages([]);
+      setQuizzes([]);
+
+      await getModules();
+    } catch (err) {
+      console.error("CREATE MODULE ITEM ERROR:", err);
+      alert(err.message || "Gagal menambahkan materi.");
+    } finally {
+      setIsSubmittingItem(false);
+    }
+  };
+
   const filteredModules = useMemo(() => {
     return modules.filter((m) => {
       const titleMatch = (m.title || "")
@@ -301,9 +326,6 @@ function GuruModul() {
     });
   }, [modules, searchTerm]);
 
-  // =========================
-  // RENDER STATES
-  // =========================
   if (loading && modules.length === 0) {
     return (
       <div style={styles.loaderWrap}>
@@ -369,7 +391,7 @@ function GuruModul() {
             Kelola <span style={{ color: "#EAB308" }}>Modul Pembelajaran</span>
           </h1>
           <p style={styles.subTitle}>
-            Kelola modul dan materi yang akan ditampilkan ke siswa Anda.
+            Kelola modul, materi, dan quiz yang akan ditampilkan ke siswa.
           </p>
         </div>
 
@@ -377,6 +399,7 @@ function GuruModul() {
           <div style={styles.searchBox}>
             <span style={styles.searchIcon}>🔍</span>
             <input
+              name="search-module"
               style={styles.searchInput}
               placeholder="Cari judul modul atau materi..."
               value={searchTerm}
@@ -385,6 +408,7 @@ function GuruModul() {
           </div>
 
           <button
+            type="button"
             style={styles.addBtn}
             onClick={() => setShowModuleModal(true)}
           >
@@ -449,7 +473,7 @@ function GuruModul() {
 
                   <div style={styles.itemSummaryWrap}>
                     <div style={styles.itemSummaryHeader}>
-                      <span style={styles.itemSummaryTitle}>Materi</span>
+                      <span style={styles.itemSummaryTitle}>Isi Modul</span>
                       <span style={styles.itemCountBadge}>
                         {(module.items || []).length} item
                       </span>
@@ -463,19 +487,29 @@ function GuruModul() {
                             (a, b) =>
                               (a.order_index ?? 0) - (b.order_index ?? 0)
                           )
-                          .slice(0, 3)
+                          .slice(0, 4)
                           .map((subItem) => (
                             <div key={subItem.id} style={styles.itemPreviewCard}>
                               <div style={styles.itemPreviewTop}>
                                 <strong style={styles.itemPreviewName}>
                                   {subItem.title || "Tanpa Judul"}
                                 </strong>
-                                <span style={styles.itemPreviewType}>
-                                  {subItem.type || "text"}
+                                <span
+                                  style={
+                                    subItem.type === "quiz"
+                                      ? styles.quizBadge
+                                      : styles.itemPreviewType
+                                  }
+                                >
+                                  {subItem.type === "quiz" ? "quiz" : subItem.type || "text"}
                                 </span>
                               </div>
 
-                              {subItem.content_text ? (
+                              {subItem.type === "quiz" ? (
+                                <p style={styles.itemPreviewText}>
+                                  Quiz terhubung ke ID: {subItem.content_url}
+                                </p>
+                              ) : subItem.content_text ? (
                                 <p style={styles.itemPreviewText}>
                                   {subItem.content_text.length > 80
                                     ? `${subItem.content_text.slice(0, 80)}...`
@@ -496,15 +530,15 @@ function GuruModul() {
                             </div>
                           ))}
 
-                        {(module.items || []).length > 3 ? (
+                        {(module.items || []).length > 4 ? (
                           <small style={styles.moreItemsText}>
-                            + {(module.items || []).length - 3} materi lainnya
+                            + {(module.items || []).length - 4} item lainnya
                           </small>
                         ) : null}
                       </div>
                     ) : (
                       <div style={styles.noItemBox}>
-                        Belum ada materi di modul ini.
+                        Belum ada materi atau quiz di modul ini.
                       </div>
                     )}
                   </div>
@@ -512,13 +546,15 @@ function GuruModul() {
 
                 <div style={styles.cardFooter}>
                   <button
+                    type="button"
                     style={styles.secondaryBtn}
                     onClick={() => openTambahMateriModal(module.id)}
                   >
-                    + TAMBAH MATERI
+                    + TAMBAH ISI MODUL
                   </button>
 
                   <button
+                    type="button"
                     style={styles.manageBtn}
                     onClick={() => navigate(`${module.id}`)}
                   >
@@ -537,6 +573,7 @@ function GuruModul() {
               tombol "Buat Modul Baru".
             </p>
             <button
+              type="button"
               style={styles.emptyAddBtn}
               onClick={() => setShowModuleModal(true)}
             >
@@ -546,13 +583,13 @@ function GuruModul() {
         )}
       </main>
 
-      {/* MODAL TAMBAH MODUL */}
       {showModuleModal && (
         <div style={styles.modalOverlay} className="modal-overlay">
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <h2>Konfigurasi Modul Baru</h2>
               <button
+                type="button"
                 style={styles.closeBtn}
                 onClick={() => setShowModuleModal(false)}
               >
@@ -564,6 +601,7 @@ function GuruModul() {
               <div style={styles.inputGroup}>
                 <label style={styles.label}>JUDUL UNIT</label>
                 <input
+                  name="module-title"
                   className="input-focus"
                   style={styles.input}
                   placeholder="Contoh: Matematika Dasar - Aljabar"
@@ -576,6 +614,7 @@ function GuruModul() {
               <div style={styles.inputGroup}>
                 <label style={styles.label}>DESKRIPSI / TUJUAN BELAJAR</label>
                 <textarea
+                  name="module-description"
                   className="input-focus"
                   style={{ ...styles.input, height: "120px", resize: "none" }}
                   placeholder="Apa yang akan dipelajari siswa di modul ini?"
@@ -605,13 +644,13 @@ function GuruModul() {
         </div>
       )}
 
-      {/* MODAL TAMBAH MATERI */}
       {showItemModal && (
         <div style={styles.modalOverlay} className="modal-overlay">
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <h2>Tambah Materi ke Modul</h2>
+              <h2>Tambah Isi Modul</h2>
               <button
+                type="button"
                 style={styles.closeBtn}
                 onClick={() => setShowItemModal(false)}
               >
@@ -621,70 +660,121 @@ function GuruModul() {
 
             <form onSubmit={handleTambahMateri} style={styles.form}>
               <div style={styles.inputGroup}>
-                <label style={styles.label}>JUDUL MATERI</label>
-                <input
-                  className="input-focus"
-                  style={styles.input}
-                  placeholder="Contoh: Pengenalan Variabel"
-                  value={itemTitle}
-                  onChange={(e) => setItemTitle(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>TIPE MATERI</label>
+                <label style={styles.label}>TIPE ISI</label>
                 <select
+                  name="item-type"
                   style={styles.input}
                   value={itemType}
-                  onChange={(e) => setItemType(e.target.value)}
+                  onChange={handleItemTypeChange}
                 >
                   <option value="text">Text</option>
                   <option value="video">Video</option>
                   <option value="file">File</option>
                   <option value="link">Link</option>
+                  <option value="quiz">Quiz</option>
                 </select>
               </div>
 
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>ISI TEKS</label>
-                <textarea
-                  className="input-focus"
-                  style={{ ...styles.input, height: "100px", resize: "none" }}
-                  placeholder="Isi materi text..."
-                  value={itemContentText}
-                  onChange={(e) => setItemContentText(e.target.value)}
-                />
-              </div>
+              {itemType === "quiz" ? (
+                <>
+                  <div style={styles.inputGroup}>
+                    <label style={styles.label}>PILIH QUIZ MODUL INI</label>
+                    <select
+                      name="selected-quiz"
+                      style={styles.input}
+                      value={selectedQuizId}
+                      onChange={handleQuizChange}
+                      required
+                    >
+                      <option value="">
+                        {loadingQuiz
+                          ? "Memuat quiz..."
+                          : "Pilih quiz yang sudah dibuat"}
+                      </option>
+
+                      {quizzes.map((quiz) => (
+                        <option key={quiz.id} value={quiz.id}>
+                          {quiz.title || quiz.quiz_title || `Quiz #${quiz.id}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={styles.inputGroup}>
+                    <label style={styles.label}>JUDUL TAMPILAN DI MODUL</label>
+                    <input
+                      name="quiz-display-title"
+                      className="input-focus"
+                      style={styles.input}
+                      placeholder="Contoh: Pretest"
+                      value={itemTitle}
+                      onChange={(e) => setItemTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={styles.inputGroup}>
+                    <label style={styles.label}>JUDUL MATERI</label>
+                    <input
+                      name="item-title"
+                      className="input-focus"
+                      style={styles.input}
+                      placeholder="Contoh: Pengenalan Variabel"
+                      value={itemTitle}
+                      onChange={(e) => setItemTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div style={styles.inputGroup}>
+                    <label style={styles.label}>ISI TEKS</label>
+                    <textarea
+                      name="item-content-text"
+                      className="input-focus"
+                      style={{ ...styles.input, height: "100px", resize: "none" }}
+                      placeholder="Isi materi text..."
+                      value={itemContentText}
+                      onChange={(e) => setItemContentText(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={styles.inputGroup}>
+                    <label style={styles.label}>URL KONTEN</label>
+                    <input
+                      name="item-content-url"
+                      className="input-focus"
+                      style={styles.input}
+                      placeholder="https://..."
+                      value={itemContentUrl}
+                      onChange={(e) => setItemContentUrl(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={styles.inputGroup}>
+                    <label style={styles.label}>GAMBAR PENDUKUNG</label>
+                    <input
+                      name="item-images"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      style={styles.input}
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setItemImages(files);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
 
               <div style={styles.inputGroup}>
-                <label style={styles.label}>URL KONTEN</label>
+                <label style={styles.label}>
+                  URUTAN {itemType === "quiz" ? "(isi 0 untuk pretest)" : ""}
+                </label>
                 <input
-                  className="input-focus"
-                  style={styles.input}
-                  placeholder="https://..."
-                  value={itemContentUrl}
-                  onChange={(e) => setItemContentUrl(e.target.value)}
-                />
-              </div>
-
-              <div style={styles.inputGroup}>
-  <label style={styles.label}>GAMBAR PENDUKUNG (BISA BANYAK)</label>
-  <input
-    type="file"
-    multiple
-    accept="image/*"
-    style={styles.input}
-    onChange={(e) => {
-      const files = Array.from(e.target.files || []);
-      setItemImages(files);
-    }}
-  />
-</div>
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>URUTAN</label>
-                <input
+                  name="item-order"
                   className="input-focus"
                   style={styles.input}
                   type="number"
@@ -708,7 +798,7 @@ function GuruModul() {
                   style={styles.submitBtn}
                   disabled={isSubmittingItem}
                 >
-                  {isSubmittingItem ? "MENYIMPAN..." : "SIMPAN KE MODULE_ITEMS"}
+                  {isSubmittingItem ? "MENYIMPAN..." : "SIMPAN ISI MODUL"}
                 </button>
               </div>
             </form>
@@ -751,7 +841,6 @@ const styles = {
     color: "#000",
     fontSize: "12px",
   },
-
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -783,7 +872,6 @@ const styles = {
     marginTop: "10px",
     fontSize: "16px",
   },
-
   headerRight: {
     display: "flex",
     gap: "15px",
@@ -819,7 +907,6 @@ const styles = {
     cursor: "pointer",
     boxShadow: "6px 6px 0px #000",
   },
-
   statsBar: {
     display: "flex",
     alignItems: "center",
@@ -849,7 +936,6 @@ const styles = {
     height: "30px",
     background: "#E2E8F0",
   },
-
   errorBox: {
     background: "#FEF2F2",
     color: "#991B1B",
@@ -859,7 +945,6 @@ const styles = {
     marginBottom: "24px",
     fontWeight: "600",
   },
-
   listArea: {},
   grid: {
     display: "grid",
@@ -908,7 +993,6 @@ const styles = {
     lineHeight: "1.6",
     marginBottom: "20px",
   },
-
   itemSummaryWrap: {
     background: "#F8FAFC",
     borderRadius: "16px",
@@ -965,6 +1049,15 @@ const styles = {
     padding: "4px 8px",
     borderRadius: "999px",
   },
+  quizBadge: {
+    fontSize: "10px",
+    fontWeight: "900",
+    textTransform: "uppercase",
+    color: "#1D4ED8",
+    background: "#DBEAFE",
+    padding: "4px 8px",
+    borderRadius: "999px",
+  },
   itemPreviewText: {
     fontSize: "12px",
     color: "#475569",
@@ -989,7 +1082,6 @@ const styles = {
     padding: "12px",
     border: "1px dashed #CBD5E1",
   },
-
   cardFooter: {
     display: "flex",
     gap: "10px",
@@ -1019,7 +1111,6 @@ const styles = {
     cursor: "pointer",
     fontSize: "13px",
   },
-
   emptyState: {
     textAlign: "center",
     padding: "100px 0",
@@ -1039,7 +1130,6 @@ const styles = {
     borderRadius: "12px",
     cursor: "pointer",
   },
-
   modalOverlay: {
     position: "fixed",
     top: 0,
@@ -1062,6 +1152,8 @@ const styles = {
     boxShadow: "15px 15px 0px #FDE047",
     position: "relative",
     animation: "slideUp 0.4s ease",
+    maxHeight: "90vh",
+    overflowY: "auto",
   },
   modalHeader: {
     display: "flex",
@@ -1120,7 +1212,6 @@ const styles = {
     fontWeight: "800",
     cursor: "pointer",
   },
-
   footer: {
     marginTop: "100px",
     borderTop: "2px solid #F1F5F9",

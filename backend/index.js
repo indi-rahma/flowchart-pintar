@@ -151,20 +151,23 @@ app.get("/api/user/quiz-history", (req, res) => {
 
   const sql = `
     SELECT 
-      uqr.id,
-      uqr.user_id,
-      uqr.quiz_id,
-      uqr.score,
-      uqr.is_pass,
-      uqr.taken_at,
-      q.title AS quiz_title,
-      q.description,
-      q.passing_score,
-      q.quiz_type
-    FROM user_quiz_results uqr
-    LEFT JOIN quizzes q ON q.id = uqr.quiz_id
-    WHERE uqr.user_id = ?
-    ORDER BY uqr.taken_at DESC, uqr.id DESC
+  uqr.id,
+  uqr.user_id,
+  uqr.quiz_id,
+  uqr.score,
+  uqr.is_pass,
+  uqr.taken_at,
+  q.title AS quiz_title,
+  q.description,
+  q.passing_score,
+  q.quiz_type,
+  q.module_id,
+  m.title AS module_title
+FROM user_quiz_results uqr
+LEFT JOIN quizzes q ON q.id = uqr.quiz_id
+LEFT JOIN modules m ON m.id = q.module_id
+WHERE uqr.user_id = ?
+ORDER BY uqr.taken_at DESC, uqr.id DESC
   `;
 
   db.query(sql, [user_id], (err, result) => {
@@ -1416,6 +1419,68 @@ app.post("/api/user-quiz-results", (req, res) => {
   });
 });
 
+app.post("/api/user-quiz-answers", (req, res) => {
+  const { user_id, quiz_id, question_id, answer, is_correct } = req.body;
+
+  if (!user_id || !quiz_id || !question_id) {
+    return res.status(400).json({
+      message: "user_id, quiz_id, dan question_id wajib diisi",
+    });
+  }
+
+  const sql = `
+    INSERT INTO user_quiz_answers 
+    (user_id, quiz_id, question_id, answer, is_correct)
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE 
+      answer = VALUES(answer),
+      is_correct = VALUES(is_correct)
+  `;
+
+  db.query(
+    sql,
+    [user_id, quiz_id, question_id, answer || "", is_correct ? 1 : 0],
+    (err) => {
+      if (err) {
+        console.error("SAVE QUIZ ANSWER ERROR:", err);
+        return res.status(500).json({
+          message: "Gagal menyimpan jawaban",
+          error: err.message,
+        });
+      }
+
+      res.json({ message: "Jawaban tersimpan" });
+    }
+  );
+});
+
+app.get("/api/user-quiz-answers", (req, res) => {
+  const { user_id, quiz_id } = req.query;
+
+  if (!user_id || !quiz_id) {
+    return res.status(400).json({
+      message: "user_id dan quiz_id wajib diisi",
+    });
+  }
+
+  const sql = `
+    SELECT *
+    FROM user_quiz_answers
+    WHERE user_id = ? AND quiz_id = ?
+  `;
+
+  db.query(sql, [user_id, quiz_id], (err, result) => {
+    if (err) {
+      console.error("GET QUIZ ANSWERS ERROR:", err);
+      return res.status(500).json({
+        message: "Gagal mengambil jawaban",
+        error: err.message,
+      });
+    }
+
+    res.json(result);
+  });
+});
 
 //======================
 // PROGRESS
@@ -1454,44 +1519,64 @@ app.put("/api/modules/progress", (req, res) => {
 // EVALUASI
 // =====================
 
-app.post("/api/evaluasi", (req, res) => {
-  const { id_siswa, nilai } = req.body;
+app.post("/api/evaluasi", async (req, res) => {
+  try {
+    console.log(req.body);
 
-  let keterangan = "";
-  if (nilai >= 85) keterangan = "Sangat Baik";
-  else if (nilai >= 70) keterangan = "Baik";
-  else if (nilai >= 50) keterangan = "Cukup";
-  else keterangan = "Perlu Perbaikan";
+    const { siswa_id, evaluasi } = req.body;
 
-  db.query(
-    "INSERT INTO evaluasi (id_siswa, nilai, keterangan) VALUES (?, ?, ?)",
-    [id_siswa, nilai, keterangan],
-    (err) => {
+    const sql = `
+      INSERT INTO evaluasi_siswa (siswa_id, evaluasi)
+      VALUES (?, ?)
+    `;
+
+    db.query(sql, [siswa_id, evaluasi], (err, result) => {
       if (err) {
-        console.error("ERROR INSERT:", err);
-        return res.status(500).json({ message: "Gagal simpan evaluasi" });
+        console.log("MYSQL ERROR:", err);
+
+        return res.status(500).json({
+          success: false,
+          error: err.message,
+        });
       }
 
-      return res.json({ message: "Evaluasi berhasil disimpan" });
-    }
-  );
+      res.json({
+        success: true,
+        result,
+      });
+    });
+  } catch (err) {
+    console.log("SERVER ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
 });
 
-app.get("/api/evaluasi/siswa/:id_siswa", (req, res) => {
-  const { id_siswa } = req.params;
+app.get("/api/evaluasi/:siswaId", (req, res) => {
+  const { siswaId } = req.params;
 
-  db.query(
-    "SELECT id, nilai, keterangan, created_at FROM evaluasi WHERE id_siswa = ?",
-    [id_siswa],
-    (err, results) => {
-      if (err) {
-        console.error("ERROR GET:", err);
-        return res.status(500).json({ message: "Server error" });
-      }
+  const sql = `
+    SELECT *
+    FROM evaluasi_siswa
+    WHERE siswa_id = ?
+    ORDER BY created_at DESC
+  `;
 
-      return res.json(results);
+  db.query(sql, [siswaId], (err, result) => {
+    if (err) {
+      console.log("MYSQL ERROR:", err);
+
+      return res.status(500).json({
+        success: false,
+        message: "Gagal mengambil evaluasi",
+      });
     }
-  );
+
+    res.json(result);
+  });
 });
 
 // =====================
@@ -1513,6 +1598,8 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(5000, () => {
-  console.log("Server jalan di http://localhost:5000 🚀");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server jalan di port ${PORT}`);
 });

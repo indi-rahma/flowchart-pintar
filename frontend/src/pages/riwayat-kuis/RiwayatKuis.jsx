@@ -13,6 +13,8 @@ const RiwayatKuis = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
+  const JUMLAH_MODUL = 5; // sesuaikan jumlah modul kamu
+
   const getEvaluasiByScore = (score) => {
     const nilai = Number(score) || 0;
 
@@ -94,19 +96,59 @@ const RiwayatKuis = () => {
   }, [results]);
 
   const stats = useMemo(() => {
-    const valid = resultsWithEvaluation.filter((item) => item.score !== null);
-    const total = valid.length;
+    const valid = resultsWithEvaluation.filter(
+      (item) => item.score !== null
+    );
 
-    const totalScore = valid.reduce(
+    const bestMissionMap = new Map();
+
+    valid.forEach((item) => {
+      const title = item.quiz_title?.toLowerCase() || "";
+
+      const tipe =
+        title.includes("pretest") || title.includes("pre-test")
+          ? "pretest"
+          : "quiz";
+
+      const modulMatch = title.match(/modul\s*(\d+)/);
+      const modul = modulMatch
+        ? modulMatch[1]
+        : item.module_id || item.modul_id || title;
+
+      const key = `${modul}-${tipe}`;
+      const score = Number(item.score) || 0;
+
+      if (
+        !bestMissionMap.has(key) ||
+        score > bestMissionMap.get(key).score
+      ) {
+        bestMissionMap.set(key, {
+          ...item,
+          score,
+        });
+      }
+    });
+
+    const bestMissions = Array.from(bestMissionMap.values());
+
+    const total = bestMissions.length;
+
+    const totalScore = bestMissions.reduce(
       (acc, curr) => acc + (Number(curr.score) || 0),
       0
     );
 
     const avg = total > 0 ? Math.round(totalScore / total) : 0;
 
-    const passed = valid.filter(
+    const passed = bestMissions.filter(
       (item) => item.is_pass === 1 || item.is_pass === true
     ).length;
+
+    const totalMissions = JUMLAH_MODUL * 2;
+    const completedMissions = Math.min(
+      bestMissions.length,
+      totalMissions
+    );
 
     let rank = "Pemula";
     let icon = "📘";
@@ -122,7 +164,15 @@ const RiwayatKuis = () => {
       icon = "📈";
     }
 
-    return { total, avg, passed, rank, icon };
+    return {
+      total,
+      avg,
+      passed,
+      completedMissions,
+      totalMissions,
+      rank,
+      icon,
+    };
   }, [resultsWithEvaluation]);
 
   const filtered = resultsWithEvaluation.filter((item) =>
@@ -133,6 +183,11 @@ const RiwayatKuis = () => {
 
   return (
     <div className="riwayat-page">
+      <div className="riwayat-grid-layer"></div>
+      <div className="riwayat-glow riwayat-glow-blue"></div>
+      <div className="riwayat-glow riwayat-glow-yellow"></div>
+      <div className="riwayat-glow riwayat-glow-cyan"></div>
+
       <div className="riwayat-container">
         <BagianStatistik
           stats={stats}
@@ -151,8 +206,10 @@ const RiwayatKuis = () => {
 
         <footer className="footer-riwayat">
           <p>
-            Terakhir diperbarui: {new Date().toLocaleTimeString("id-ID")}
+            Terakhir diperbarui:{" "}
+            {new Date().toLocaleTimeString("id-ID")}
           </p>
+
           <div className="sync-status">
             <span className="sync-dot" />
             Data tersinkron
