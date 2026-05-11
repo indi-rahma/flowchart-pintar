@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { API_BASE } from "../config";
 
 /**
  * PENGATURAN GURU - CLEAN VERSION
@@ -43,7 +44,7 @@ function PengaturanGuru() {
       setLoading(true);
 
       const res = await fetch(
-        `http://localhost:5000/api/user/settings?userId=${userId}`
+        `${API_BASE}/api/user/settings?userId=${userId}`
       );
 
       if (!res.ok) throw new Error("Gagal mengambil data pengaturan");
@@ -76,7 +77,7 @@ function PengaturanGuru() {
     try {
       setIsUpdating(true);
 
-      const res = await fetch("http://localhost:5000/api/user/settings", {
+      const res = await fetch(`${API_BASE}/api/user/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

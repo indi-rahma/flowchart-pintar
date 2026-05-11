@@ -62,7 +62,7 @@ const AppRoutes = () => {
         <Route path="/pencapaian" element={<Pencapaian />} />
         <Route path="/reader/:moduleId/:itemId" element={<ContentReader />} />
         <Route path="/riwayat-kuis" element={<RiwayatKuis />} />
-        <Route path="/siswa/pengaturan" element={<Pengaturan />} />
+<Route path="/pengaturan" element={<Pengaturan />} />
         <Route path="/latihan" element={<FlowEditor />} />
 
         <Route path="/quiz/:id" element={<HalamanKuis />} />
