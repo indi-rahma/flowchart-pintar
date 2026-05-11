@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import
+import { API_BASE } from "../config";
 
 function Evaluasi() {
   const { id } = useParams();
