@@ -1,5 +1,5 @@
 import React from "react";
-import "./dashboard.css";
+import "./Dashboard.css";
 
 const StatCard = ({ icon, label, value }) => (
   <div className="dashboard-stat-card stat-card">
