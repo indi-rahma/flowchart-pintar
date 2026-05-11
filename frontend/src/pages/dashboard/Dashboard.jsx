@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import TampilanLoading from "./TampilanLoading";
 import RingkasanBelajar from "./RingkasanBelajar";
 import DaftarModul from "./DaftarModul";
-import "./dashboard.css";
+import "./Dashboard.css";
 
 const API_BASE = "http://localhost:5000";
 
