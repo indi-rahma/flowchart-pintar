@@ -115,3 +115,49 @@ body {
 .react-flow__controls {
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
+
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  #root {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .hero {
+    padding: 24px 14px;
+  }
+
+  #center {
+    width: 100%;
+    padding: 0 14px;
+    min-height: auto;
+  }
+
+  #next-steps {
+    width: 100%;
+    max-width: 100%;
+    flex-direction: column;
+  }
+
+  #next-steps > div {
+    padding: 20px;
+    border-right: none;
+  }
+}

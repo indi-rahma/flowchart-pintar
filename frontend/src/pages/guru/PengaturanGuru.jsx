@@ -1,15 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { API_BASE } from "../config";
 
-/**
- * PENGATURAN GURU - CLEAN VERSION
- * --------------------------------
- * Fitur:
- * 1. Profil Guru
- * 2. Keamanan Akun / Ubah Password
- * 3. LocalStorage Sync saat nama/email berubah
- */
-
 function PengaturanGuru() {
   const sessionUser = JSON.parse(localStorage.getItem("user"));
   const userId = sessionUser?.id;
@@ -18,7 +9,7 @@ function PengaturanGuru() {
     nama: "",
     email: "",
     oldPassword: "",
-    newPassword: ""
+    newPassword: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -27,7 +18,7 @@ function PengaturanGuru() {
   const [toast, setToast] = useState({
     show: false,
     message: "",
-    type: "success"
+    type: "success",
   });
 
   const showToast = (msg, type = "success") => {
@@ -43,10 +34,7 @@ function PengaturanGuru() {
     try {
       setLoading(true);
 
-      const res = await fetch(
-        `${API_BASE}/api/user/settings?userId=${userId}`
-      );
-
+      const res = await fetch(`${API_BASE}/api/user/settings?userId=${userId}`);
       if (!res.ok) throw new Error("Gagal mengambil data pengaturan");
 
       const resData = await res.json();
@@ -54,9 +42,9 @@ function PengaturanGuru() {
       setData((prev) => ({
         ...prev,
         nama: resData.name || resData.nama || "",
-        email: resData.email || ""
+        email: resData.email || "",
       }));
-    } catch (err) {
+    } catch {
       showToast("Gagal terhubung ke server", "error");
     } finally {
       setTimeout(() => setLoading(false), 600);
@@ -68,7 +56,7 @@ function PengaturanGuru() {
   }, [fetchSettings]);
 
   const handleUpdate = async (e) => {
-    if (e) e.preventDefault();
+    e.preventDefault();
 
     if (!data.nama || !data.email) {
       return showToast("Nama dan Email tidak boleh kosong", "error");
@@ -85,8 +73,8 @@ function PengaturanGuru() {
           nama: data.nama,
           email: data.email,
           oldPassword: data.oldPassword,
-          newPassword: data.newPassword
-        })
+          newPassword: data.newPassword,
+        }),
       });
 
       const result = await res.json();
@@ -98,7 +86,7 @@ function PengaturanGuru() {
       const newUserSession = {
         ...sessionUser,
         name: data.nama,
-        email: data.email
+        email: data.email,
       };
 
       localStorage.setItem("user", JSON.stringify(newUserSession));
@@ -108,7 +96,7 @@ function PengaturanGuru() {
       setData((prev) => ({
         ...prev,
         oldPassword: "",
-        newPassword: ""
+        newPassword: "",
       }));
     } catch (err) {
       showToast(err.message, "error");
@@ -120,6 +108,7 @@ function PengaturanGuru() {
   if (loading) {
     return (
       <div style={styles.loaderArea}>
+        <style>{globalStyle}</style>
         <div style={styles.skeletonCircle}></div>
         <p style={styles.loaderTxt}>MENYIAPKAN PENGATURAN...</p>
       </div>
@@ -127,59 +116,15 @@ function PengaturanGuru() {
   }
 
   return (
-    <div style={styles.page}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-
-        * {
-          box-sizing: border-box;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          transition: all 0.2s ease;
-        }
-
-        .tab-btn:hover {
-          background: #F1F5F9;
-        }
-
-        .active-tab {
-          background: #000 !important;
-          color: #FDE047 !important;
-          border-color: #000 !important;
-        }
-
-        .input-focus:focus {
-          border-color: #000 !important;
-          box-shadow: 4px 4px 0px #FDE047 !important;
-          outline: none;
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes rotate {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
+    <main className="pengaturan-guru-page" style={styles.page}>
+      <style>{globalStyle}</style>
 
       {toast.show && (
         <div
           style={{
             ...styles.toast,
             background: toast.type === "success" ? "#000" : "#EF4444",
-            color: toast.type === "success" ? "#FDE047" : "#FFF"
+            color: toast.type === "success" ? "#FDE047" : "#FFF",
           }}
         >
           {toast.type === "success" ? "✅ " : "⚠️ "}
@@ -188,84 +133,66 @@ function PengaturanGuru() {
       )}
 
       <header style={styles.header}>
-        <div>
-          <div style={styles.badge}>MASTER SETTINGS</div>
-          <h1 style={styles.title}>
-            Konfigurasi <span style={{ color: "#EAB308" }}>Akun Guru</span>
-          </h1>
-          <p style={styles.subtitle}>
-            Kelola identitas akun dan keamanan password Anda.
-          </p>
-        </div>
+        <div style={styles.badge}>MASTER SETTINGS</div>
+        <h1 style={styles.title}>
+          Konfigurasi <span style={styles.goldText}>Akun Guru</span>
+        </h1>
+        <p style={styles.subtitle}>
+          Kelola identitas akun dan keamanan password Anda.
+        </p>
       </header>
 
-      <div style={styles.contentLayout}>
-        <aside style={styles.sidebar}>
+      <section className="settings-shell" style={styles.contentLayout}>
+        <aside className="settings-tabs" style={styles.sidebar}>
           <button
             className={`tab-btn ${activeTab === "profil" ? "active-tab" : ""}`}
             style={styles.tabBtn}
             onClick={() => setActiveTab("profil")}
           >
-            👤 Profil Publik
+            👤 Profil
           </button>
 
           <button
-            className={`tab-btn ${
-              activeTab === "keamanan" ? "active-tab" : ""
-            }`}
+            className={`tab-btn ${activeTab === "keamanan" ? "active-tab" : ""}`}
             style={styles.tabBtn}
             onClick={() => setActiveTab("keamanan")}
           >
-            🔒 Keamanan Akun
+            🔒 Keamanan
           </button>
 
-          <div style={styles.infoBox}>
-            <p style={{ margin: 0, fontSize: "11px", fontWeight: 800 }}>
-              SINKRONISASI AKTIF
-            </p>
-            <p
-              style={{
-                margin: "5px 0 0 0",
-                fontSize: "10px",
-                opacity: 0.6
-              }}
-            >
+          <div className="settings-info" style={styles.infoBox}>
+            <p style={styles.infoTitle}>SINKRONISASI AKTIF</p>
+            <p style={styles.infoText}>
               Terakhir diperbarui: {new Date().toLocaleTimeString()}
             </p>
           </div>
         </aside>
 
-        <main style={styles.formArea}>
-          <form style={styles.card} onSubmit={handleUpdate}>
+        <section style={styles.formArea}>
+          <form className="settings-card" style={styles.card} onSubmit={handleUpdate}>
             {activeTab === "profil" && (
               <div style={styles.section}>
                 <h3 style={styles.sectionTitle}>Informasi Dasar</h3>
 
                 <div style={styles.field}>
-                  <label style={styles.label}>
-                    NAMA LENGKAP (Tampilan Dashboard)
-                  </label>
+                  <label style={styles.label}>NAMA LENGKAP</label>
                   <input
                     className="input-focus"
                     style={styles.input}
                     value={data.nama}
-                    onChange={(e) =>
-                      setData({ ...data, nama: e.target.value })
-                    }
+                    onChange={(e) => setData({ ...data, nama: e.target.value })}
+                    placeholder="Masukkan nama lengkap"
                   />
                 </div>
 
                 <div style={styles.field}>
-                  <label style={styles.label}>
-                    ALAMAT EMAIL (Kredensial Login)
-                  </label>
+                  <label style={styles.label}>ALAMAT EMAIL</label>
                   <input
                     className="input-focus"
                     style={styles.input}
                     value={data.email}
-                    onChange={(e) =>
-                      setData({ ...data, email: e.target.value })
-                    }
+                    onChange={(e) => setData({ ...data, email: e.target.value })}
+                    placeholder="nama@email.com"
                   />
                 </div>
               </div>
@@ -304,18 +231,13 @@ function PengaturanGuru() {
                 </div>
 
                 <div style={styles.warningBox}>
-                  Password baru sebaiknya minimal 8 karakter dan berisi
-                  kombinasi angka.
+                  Password baru sebaiknya minimal 8 karakter dan berisi kombinasi angka.
                 </div>
               </div>
             )}
 
             <div style={styles.footerActions}>
-              <button
-                type="button"
-                style={styles.btnCancel}
-                onClick={fetchSettings}
-              >
+              <button type="button" style={styles.btnCancel} onClick={fetchSettings}>
                 RESET
               </button>
 
@@ -324,7 +246,7 @@ function PengaturanGuru() {
                 style={{
                   ...styles.btnSave,
                   opacity: isUpdating ? 0.7 : 1,
-                  cursor: isUpdating ? "not-allowed" : "pointer"
+                  cursor: isUpdating ? "not-allowed" : "pointer",
                 }}
                 disabled={isUpdating}
               >
@@ -332,110 +254,261 @@ function PengaturanGuru() {
               </button>
             </div>
           </form>
-        </main>
-      </div>
+        </section>
+      </section>
 
       <footer style={styles.footer}>
-        <p>© 2026 EduPro Arsitektur - Guru ID: {userId}</p>
+        <p style={styles.footerText}>© 2026 EduPro Arsitektur - Guru ID: {userId}</p>
         <div style={styles.secureBadge}>🛡️ END-TO-END ENCRYPTED</div>
       </footer>
-    </div>
+    </main>
   );
 }
 
+const globalStyle = `
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap');
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    background: #FFFFFF;
+  }
+
+  .tab-btn {
+    transition: all 0.22s ease;
+  }
+
+  .active-tab {
+    background: #000 !important;
+    color: #FDE047 !important;
+    border-color: #000 !important;
+    box-shadow: 4px 4px 0px #EAB308;
+  }
+
+  .input-focus:focus {
+    border-color: #000 !important;
+    box-shadow: 4px 4px 0px #FDE047 !important;
+    outline: none;
+    background: #FFFFFF !important;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 1100px) {
+    .pengaturan-guru-page {
+      padding: 22px !important;
+      overflow-x: hidden !important;
+    }
+
+    .settings-shell {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 18px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    .settings-tabs {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 12px !important;
+      width: 100% !important;
+    }
+
+    .settings-info {
+      grid-column: 1 / -1 !important;
+      margin-top: 0 !important;
+    }
+
+    .settings-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      border-radius: 28px !important;
+      box-shadow: 8px 8px 0px #EAB308 !important;
+      padding: 28px !important;
+    }
+
+    .tab-btn {
+      text-align: center !important;
+      padding: 15px 12px !important;
+      border-radius: 18px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .pengaturan-guru-page {
+      padding: 14px !important;
+    }
+
+    .settings-card {
+      border-width: 3px !important;
+      box-shadow: 6px 6px 0px #EAB308 !important;
+      border-radius: 24px !important;
+      padding: 20px !important;
+    }
+
+    .tab-btn {
+      font-size: 12px !important;
+      padding: 14px 10px !important;
+    }
+
+    .guru-content-area {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+      overflow-x: hidden !important;
+    }
+  }
+`;
+
 const styles = {
   page: {
-    padding: "60px 80px",
+    width: "100%",
     minHeight: "100vh",
-    background: "#FFFFFF"
+    padding: "clamp(18px, 4vw, 56px)",
+    background:
+      "radial-gradient(circle at top left, rgba(234,179,8,0.1), transparent 30%), linear-gradient(180deg, #FFFFFF 0%, #FFFBEB 48%, #FFFFFF 100%)",
+    fontFamily:
+      "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+    color: "#0F172A",
+    overflowX: "hidden",
   },
 
   header: {
-    marginBottom: "50px"
+    marginBottom: "24px",
   },
 
   badge: {
     background: "#000",
     color: "#FDE047",
-    padding: "6px 12px",
-    borderRadius: "8px",
-    fontSize: "10px",
-    fontWeight: "800",
-    marginBottom: "15px",
-    display: "inline-block"
+    padding: "7px 13px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: "900",
+    marginBottom: "14px",
+    display: "inline-flex",
   },
 
   title: {
-    fontSize: "42px",
+    fontSize: "clamp(30px, 8vw, 48px)",
     fontWeight: "900",
     margin: 0,
-    letterSpacing: "-1.5px"
+    letterSpacing: "-1.3px",
+    lineHeight: 1.05,
+  },
+
+  goldText: {
+    color: "#EAB308",
   },
 
   subtitle: {
     color: "#64748B",
-    marginTop: "10px",
-    fontSize: "16px"
+    margin: "12px 0 0",
+    fontSize: "clamp(13px, 3.5vw, 16px)",
+    lineHeight: 1.6,
+    fontWeight: "600",
   },
 
   contentLayout: {
-    display: "flex",
-    gap: "50px",
-    alignItems: "flex-start"
+    display: "grid",
+    gridTemplateColumns: "minmax(220px, 280px) minmax(0, 1fr)",
+    gap: "clamp(18px, 5vw, 50px)",
+    alignItems: "flex-start",
+    width: "100%",
+    minWidth: 0,
   },
 
   sidebar: {
-    width: "280px",
+    width: "100%",
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "10px",
+    minWidth: 0,
   },
 
   tabBtn: {
-    padding: "18px 25px",
-    borderRadius: "15px",
+    width: "100%",
+    padding: "16px 18px",
+    borderRadius: "18px",
     border: "3px solid #F1F5F9",
     background: "#FFF",
-    fontWeight: "800",
+    fontWeight: "900",
     textAlign: "left",
     cursor: "pointer",
-    fontSize: "14px"
+    fontSize: "14px",
   },
 
   infoBox: {
-    marginTop: "30px",
-    padding: "20px",
+    marginTop: "18px",
+    padding: "14px",
     background: "#F8FAFC",
-    borderRadius: "20px"
+    borderRadius: "18px",
+    border: "1px solid #F1F5F9",
+  },
+
+  infoTitle: {
+    margin: 0,
+    fontSize: "10px",
+    fontWeight: "900",
+  },
+
+  infoText: {
+    margin: "6px 0 0",
+    fontSize: "10px",
+    opacity: 0.65,
+    fontWeight: "700",
   },
 
   formArea: {
-    flex: 1
+    minWidth: 0,
+    width: "100%",
   },
 
   card: {
+    width: "100%",
+    maxWidth: "100%",
     background: "#FFF",
     border: "4px solid #000",
     borderRadius: "35px",
-    padding: "50px",
+    padding: "clamp(22px, 6vw, 50px)",
     boxShadow: "15px 15px 0px #EAB308",
-    animation: "slideUp 0.4s ease"
+    animation: "slideUp 0.4s ease",
+    minWidth: 0,
+    overflow: "hidden",
   },
 
   section: {
-    marginBottom: "30px"
+    marginBottom: "26px",
+    minWidth: 0,
   },
 
   sectionTitle: {
-    fontSize: "24px",
-    fontWeight: "800",
-    marginBottom: "30px",
+    fontSize: "clamp(20px, 5vw, 26px)",
+    fontWeight: "900",
+    margin: "0 0 24px",
     borderBottom: "2px solid #F1F5F9",
-    paddingBottom: "15px"
+    paddingBottom: "14px",
   },
 
   field: {
-    marginBottom: "25px"
+    marginBottom: "20px",
+    minWidth: 0,
   },
 
   label: {
@@ -443,72 +516,85 @@ const styles = {
     fontSize: "10px",
     fontWeight: "900",
     marginBottom: "10px",
-    color: "#64748B"
+    color: "#64748B",
+    lineHeight: 1.4,
   },
 
   input: {
     width: "100%",
-    padding: "18px",
-    borderRadius: "15px",
+    minWidth: 0,
+    padding: "15px",
+    borderRadius: "16px",
     border: "3px solid #F1F5F9",
     background: "#F8FAFC",
-    fontWeight: "700",
-    fontSize: "15px"
+    fontWeight: "750",
+    fontSize: "15px",
   },
 
   warningBox: {
-    padding: "15px",
+    padding: "14px",
     background: "#FEF9C3",
-    borderRadius: "12px",
+    borderRadius: "14px",
     fontSize: "12px",
-    fontWeight: "600",
-    color: "#854D0E"
+    fontWeight: "700",
+    color: "#854D0E",
+    lineHeight: 1.6,
   },
 
   footerActions: {
     display: "flex",
-    gap: "20px",
-    marginTop: "40px"
+    gap: "12px",
+    marginTop: "30px",
+    flexWrap: "wrap",
   },
 
   btnCancel: {
-    flex: 1,
-    padding: "18px",
-    borderRadius: "15px",
+    flex: "1 1 120px",
+    padding: "15px",
+    borderRadius: "16px",
     border: "3px solid #F1F5F9",
     background: "#FFF",
-    fontWeight: "800",
-    cursor: "pointer"
+    fontWeight: "900",
+    cursor: "pointer",
   },
 
   btnSave: {
-    flex: 2,
-    padding: "18px",
-    borderRadius: "15px",
+    flex: "2 1 180px",
+    padding: "15px",
+    borderRadius: "16px",
     border: "none",
     background: "#000",
     color: "#FDE047",
-    fontWeight: "800"
+    fontWeight: "900",
   },
 
   toast: {
     position: "fixed",
-    top: "40px",
-    right: "40px",
-    padding: "20px 30px",
-    borderRadius: "20px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-    fontWeight: "800",
+    top: "20px",
+    right: "16px",
+    left: "16px",
+    maxWidth: "460px",
+    margin: "0 auto",
+    padding: "15px 18px",
+    borderRadius: "18px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+    fontWeight: "900",
     zIndex: 1000,
-    animation: "slideUp 0.3s ease"
+    animation: "slideUp 0.3s ease",
+    lineHeight: 1.5,
   },
 
   loaderArea: {
-    height: "80vh",
+    minHeight: "100vh",
+    padding: "24px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    background: "#FFFFFF",
+    fontFamily:
+      "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+    textAlign: "center",
   },
 
   skeletonCircle: {
@@ -518,29 +604,36 @@ const styles = {
     borderRadius: "50%",
     border: "4px solid #EAB308",
     borderTopColor: "transparent",
-    animation: "rotate 1s linear infinite"
+    animation: "rotate 1s linear infinite",
   },
 
   loaderTxt: {
     marginTop: "20px",
-    fontWeight: "800",
-    letterSpacing: "1px"
+    fontWeight: "900",
+    letterSpacing: "1px",
+    color: "#0F172A",
   },
 
   footer: {
-    marginTop: "60px",
+    marginTop: "34px",
     borderTop: "2px solid #F1F5F9",
-    paddingTop: "30px",
+    paddingTop: "22px",
     display: "flex",
     justifyContent: "space-between",
+    gap: "12px",
+    flexWrap: "wrap",
     fontSize: "12px",
-    color: "#CBD5E1",
-    fontWeight: "700"
+    color: "#94A3B8",
+    fontWeight: "800",
+  },
+
+  footerText: {
+    margin: 0,
   },
 
   secureBadge: {
-    color: "#22C55E"
-  }
+    color: "#22C55E",
+  },
 };
 
 export default PengaturanGuru;

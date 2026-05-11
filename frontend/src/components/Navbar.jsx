@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-/**
- * FLOWCHART PINTAR - SMART NAVBAR V2.0
- * Features: Auto-Breadcrumbs, Glassmorphism, Role-Based Logic, Identity-Safe UI.
- */
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -13,16 +8,13 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ambil data user dengan aman
   const user = JSON.parse(localStorage.getItem("user")) || {};
- const userName = user.nama || "Pengguna";
-  const role = user.role || "siswa";
+  const userName = user.nama || "Pengguna";
 
-  // Efek scroll untuk navbar transparan ke solid
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 16);
     window.addEventListener("scroll", handleScroll);
-    
+
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
@@ -30,13 +22,13 @@ const Navbar = () => {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
-  // --- SMART LOGIC ---
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/login");
@@ -47,264 +39,367 @@ const Navbar = () => {
     return path.length > 0 ? path[path.length - 1].toUpperCase() : "BERANDA";
   };
 
-  // --- RENDERER ---
   return (
-    <header style={{
-      ...styles.header,
-      backgroundColor: scrolled ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.8)",
-      boxShadow: scrolled ? "0 4px 20px rgba(0,0,0,0.05)" : "none",
-    }}>
-      {/* CSS Micro-interactions */}
+    <header
+      style={{
+        ...styles.header,
+        backgroundColor: scrolled
+          ? "rgba(255,255,255,0.88)"
+          : "rgba(255,255,255,0.68)",
+        boxShadow: scrolled ? "0 14px 35px rgba(0,0,0,0.07)" : "none",
+      }}
+    >
       <style>{`
-        .nav-logo:hover { transform: scale(1.05); color: #EAB308 !important; }
-        .dropdown-item { transition: all 0.2s; border-radius: 8px !important; margin-bottom: 4px; }
-        .dropdown-item:hover { background: #FDE047 !important; color: #000 !important; transform: translateX(5px); }
-        .avatar-glow { box-shadow: 0 0 0 2px #FFF, 0 0 0 4px #FDE047; }
+        * {
+          box-sizing: border-box;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-logo:hover {
+          transform: translateY(-1px);
+        }
+
+        .profile-trigger:hover {
+          background: rgba(0,122,255,0.08);
+        }
+
+        .dropdown-item {
+          transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(255,59,48,0.14) !important;
+          transform: translateY(-1px);
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .navbar-header {
+            height: auto !important;
+            min-height: 72px !important;
+            padding: 12px 14px !important;
+            gap: 10px !important;
+          }
+
+          .navbar-left {
+            min-width: 0 !important;
+            gap: 10px !important;
+          }
+
+          .navbar-logo-text {
+            font-size: 15px !important;
+            max-width: 130px !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .navbar-divider {
+            display: none !important;
+          }
+
+          .navbar-breadcrumb {
+            display: none !important;
+          }
+
+          .navbar-hello {
+            display: none !important;
+          }
+
+          .navbar-dropdown {
+            position: fixed !important;
+            top: 76px !important;
+            left: 14px !important;
+            right: 14px !important;
+            min-width: unset !important;
+            width: auto !important;
+            border-radius: 24px !important;
+          }
+        }
       `}</style>
 
-      {/* LEFT SIDE: LOGO & BREADCRUMBS */}
-      <div style={styles.leftSection}>
-        <div 
-          onClick={() => navigate("/")} 
+      <div className="navbar-left" style={styles.leftSection}>
+        <div
+          onClick={() => navigate("/")}
           className="nav-logo"
           style={styles.logo}
         >
           <span style={styles.logoIcon}>📐</span>
-          <b>Flowchart<span style={{color: '#EAB308'}}>Pintar</span></b>
+          <b className="navbar-logo-text">
+            Flowchart<span style={{ color: "#007AFF" }}>Pintar</span>
+          </b>
         </div>
-        
-        <div style={styles.divider}></div>
-        
-        <div style={styles.breadcrumb}>
-          <span style={styles.dot}></span>
+
+        <div className="navbar-divider" style={styles.divider} />
+
+        <div className="navbar-breadcrumb" style={styles.breadcrumb}>
+          <span style={styles.dot} />
           {getBreadcrumb()}
         </div>
       </div>
 
-      {/* RIGHT SIDE: USER PROFILE */}
-      <div ref={dropdownRef} style={{ position: "relative" }}>
-        <div
+      <div ref={dropdownRef} style={styles.profileArea}>
+        <button
+          type="button"
           onClick={() => setIsOpen(!isOpen)}
+          className="profile-trigger"
           style={styles.profileTrigger}
         >
-          <div style={styles.userInfo}>
-<span style={styles.helloText}>
-  Halo, <b>{userName}</b> 👋
-</span>
-          </div>
-          
-          <div className="avatar-glow" style={styles.avatarWrapper}>
+          <span className="navbar-hello" style={styles.helloText}>
+            Halo, <b>{userName}</b>
+          </span>
+
+          <div style={styles.avatarWrapper}>
             <img
               src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
               alt="avatar"
               style={styles.avatarImg}
             />
           </div>
-        </div>
+        </button>
 
-        {/* SMART DROPDOWN */}
-       {/* DROPDOWN - ONLY LOGOUT VERSION */}
-      {isOpen && (
-  <div style={styles.dropdown}>
-    <div style={styles.dropdownHeader}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div style={styles.avatarMini}>
-          {userName.charAt(0).toUpperCase()}
-        </div>
+        {isOpen && (
+          <div className="navbar-dropdown" style={styles.dropdown}>
+            <div style={styles.dropdownHeader}>
+              <div style={styles.avatarMini}>{userName.charAt(0).toUpperCase()}</div>
 
-        <div style={{ textAlign: "left" }}>
-          <p style={styles.fullUserName}>{userName}</p>
-          <p style={styles.userEmail}>{user.email || "user@flowchart.id"}</p>
-        </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={styles.fullUserName}>{userName}</p>
+                <p style={styles.userEmail}>{user.email || "user@flowchart.id"}</p>
+              </div>
+            </div>
+
+            <div style={styles.dropdownBody}>
+              <button
+                className="dropdown-item"
+                onClick={handleLogout}
+                style={styles.logoutBtn}
+              >
+                <span>Keluar Sesi</span>
+                <span>🚪</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </header>
+  );
+};
 
-    <div style={{ padding: "10px" }}>
-      <button
-        className="dropdown-item"
-        onClick={handleLogout}
-        style={{
-          ...styles.btnStyle,
-          color: "#EF4444",
-          fontWeight: "800",
-          justifyContent: "center",
-          borderRadius: "12px",
-          background: "#FEF2F2",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        <span>Keluar Sesi</span>
-        <span>🚪</span>
-      </button>
-    </div>
-  </div>
-)}
-    </div> {/* Penutup dropdownRef container */}
-  </header>
-);};
-
-// --- STYLES ARCHITECTURE ---
 const styles = {
-  avatarMini: {
-  width: "42px",
-  height: "42px",
-  borderRadius: "14px",
-  background: "linear-gradient(135deg, #002B5B, #0052CC)",
-  color: "#fff",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: "900",
-  fontSize: "16px",
-},
-
   header: {
-    height: "80px",
-    backdropFilter: "blur(12px)",
-    padding: "0 40px",
+    height: "78px",
+    backdropFilter: "blur(22px)",
+    WebkitBackdropFilter: "blur(22px)",
+    padding: "0 32px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottom: "1px solid #E2E8F0",
+    borderBottom: "1px solid rgba(60,60,67,0.12)",
     position: "sticky",
     top: 0,
     zIndex: 1000,
-    transition: "all 0.3s ease",
-    fontFamily: "'Plus Jakarta Sans', sans-serif"
+    transition: "all 0.25s ease",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif",
   },
+
   leftSection: {
     display: "flex",
     alignItems: "center",
-    gap: "20px"
+    gap: "18px",
+    minWidth: 0,
   },
+
   logo: {
     cursor: "pointer",
     fontSize: "18px",
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    transition: "all 0.3s",
-    letterSpacing: "-0.5px"
+    gap: "9px",
+    transition: "all 0.2s ease",
+    letterSpacing: "-0.6px",
+    color: "#1D1D1F",
+    minWidth: 0,
   },
+
   logoIcon: {
-    background: "#000",
-    borderRadius: "8px",
-    width: "32px",
-    height: "32px",
+    flex: "0 0 auto",
+    background: "#F5F5F7",
+    border: "1px solid rgba(60,60,67,0.12)",
+    borderRadius: "12px",
+    width: "38px",
+    height: "38px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "14px"
+    fontSize: "17px",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
   },
+
   divider: {
     width: "1px",
-    height: "30px",
-    background: "#CBD5E1"
+    height: "28px",
+    background: "rgba(60,60,67,0.16)",
   },
+
   breadcrumb: {
     fontSize: "12px",
-    fontWeight: "700",
-    color: "#64748B",
+    fontWeight: "800",
+    color: "#6E6E73",
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    background: "#F8FAFC",
-    padding: "6px 12px",
-    borderRadius: "100px",
-    border: "1px solid #E2E8F0"
+    background: "rgba(245,245,247,0.8)",
+    padding: "7px 12px",
+    borderRadius: "999px",
+    border: "1px solid rgba(60,60,67,0.1)",
+    maxWidth: "190px",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
   },
+
   dot: {
-    width: "6px",
-    height: "6px",
-    background: "#EAB308",
-    borderRadius: "50%"
+    width: "7px",
+    height: "7px",
+    background: "#34C759",
+    borderRadius: "999px",
+    boxShadow: "0 0 0 5px rgba(52,199,89,0.12)",
+    flex: "0 0 auto",
   },
+
+  profileArea: {
+    position: "relative",
+    flex: "0 0 auto",
+  },
+
   profileTrigger: {
+    border: "none",
     display: "flex",
-    gap: "15px",
+    gap: "12px",
     cursor: "pointer",
     alignItems: "center",
-    padding: "6px",
-    borderRadius: "100px",
-    transition: "background 0.2s"
+    padding: "7px 8px 7px 14px",
+    borderRadius: "999px",
+    background: "transparent",
+    transition: "background 0.2s ease",
   },
-  userInfo: {
-    textAlign: "right",
-    display: "flex",
-    flexDirection: "column"
-  },
+
   helloText: {
-    fontSize: "11px",
-    color: "#64748B",
-    fontWeight: "600"
+    fontSize: "13px",
+    color: "#6E6E73",
+    fontWeight: "650",
+    maxWidth: "190px",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
   },
-  roleText: {
-    fontWeight: "900",
-    fontSize: "14px",
-    color: "#0F172A",
-    letterSpacing: "0.5px"
-  },
+
   avatarWrapper: {
     width: "42px",
     height: "42px",
     borderRadius: "50%",
     overflow: "hidden",
-    transition: "all 0.3s"
+    background: "#FFFFFF",
+    border: "1px solid rgba(60,60,67,0.12)",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
+    flex: "0 0 auto",
   },
+
   avatarImg: {
     width: "100%",
     height: "100%",
-    objectFit: "cover"
+    objectFit: "cover",
   },
+
   dropdown: {
     position: "absolute",
-    top: "70px",
+    top: "64px",
     right: 0,
-    background: "white",
-    borderRadius: "16px",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
-    minWidth: "240px",
-    border: "1px solid #E2E8F0",
+    background: "rgba(255,255,255,0.9)",
+    borderRadius: "24px",
+    boxShadow: "0 24px 60px rgba(0,0,0,0.16)",
+    minWidth: "280px",
+    border: "1px solid rgba(60,60,67,0.13)",
     overflow: "hidden",
-    animation: "fadeInUp 0.3s ease"
+    animation: "fadeInUp 0.22s ease",
+    backdropFilter: "blur(22px)",
+    WebkitBackdropFilter: "blur(22px)",
   },
+
   dropdownHeader: {
-    padding: "20px",
-    background: "#F8FAFC",
-    borderBottom: "1px solid #E2E8F0"
-  },
-  fullUserName: {
-    margin: 0,
-    fontWeight: "800",
-    fontSize: "15px",
-    color: "#0F172A"
-  },
-  userEmail: {
-    margin: "4px 0 0 0",
-    fontSize: "12px",
-    color: "#64748B"
-  },
-  innerDivider: {
-    height: "1px",
-    background: "#E2E8F0",
-    margin: "8px 0"
-  },
-  btnStyle: {
-    width: "100%",
-    padding: "12px 15px",
-    textAlign: "left",
-    border: "none",
-    background: "transparent",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#334155",
+    padding: "18px",
+    background: "rgba(245,245,247,0.72)",
+    borderBottom: "1px solid rgba(60,60,67,0.1)",
     display: "flex",
     alignItems: "center",
-    gap: "10px"
-  }
+    gap: "12px",
+  },
+
+  avatarMini: {
+    width: "44px",
+    height: "44px",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, #007AFF, #5AC8FA)",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "900",
+    fontSize: "17px",
+    flex: "0 0 auto",
+  },
+
+  fullUserName: {
+    margin: 0,
+    fontWeight: "900",
+    fontSize: "15px",
+    color: "#1D1D1F",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
+  },
+
+  userEmail: {
+    margin: "4px 0 0",
+    fontSize: "12px",
+    color: "#86868B",
+    fontWeight: "650",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
+  },
+
+  dropdownBody: {
+    padding: "10px",
+  },
+
+  logoutBtn: {
+    width: "100%",
+    padding: "13px 15px",
+    border: "none",
+    borderRadius: "16px",
+    background: "rgba(255,59,48,0.1)",
+    color: "#FF3B30",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "850",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+  },
 };
 
 export default Navbar;

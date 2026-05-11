@@ -1,3 +1,14 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  background: #eef4ff;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -7,7 +18,6 @@
     opacity: 0;
     transform: translateY(18px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -21,39 +31,27 @@
 }
 
 @keyframes floaty {
-  0%,
-  100% {
+  0%, 100% {
     transform: translateY(0);
   }
-
   50% {
     transform: translateY(-8px);
   }
 }
 
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 .soft-pop {
   animation: fadeUp 0.55s ease both;
-}
-
-.module-card,
-.stat-card {
-  transition: 0.25s ease;
-}
-
-.module-card:hover,
-.stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 24px 54px rgba(37, 99, 235, 0.13) !important;
-}
-
-.lesson-hover {
-  transition: 0.2s ease;
-}
-
-.lesson-hover:hover {
-  transform: translateX(6px);
-  border-color: #93c5fd !important;
-  background: #f8faff !important;
 }
 
 button {
@@ -65,16 +63,44 @@ button:hover {
   filter: brightness(1.04);
 }
 
+.module-card,
+.stat-card,
+.dashboard-module-card,
+.dashboard-stat-card {
+  transition: 0.25s ease;
+}
+
+.module-card:hover,
+.stat-card:hover,
+.dashboard-module-card:hover,
+.dashboard-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 48px rgba(37, 99, 235, 0.13) !important;
+}
+
+.lesson-hover,
+.dashboard-lesson-row {
+  transition: 0.2s ease;
+}
+
+.lesson-hover:hover,
+.dashboard-lesson-row:hover {
+  transform: translateX(4px);
+  border-color: #93c5fd !important;
+  background: #f8faff !important;
+}
+
 .dashboard-page {
   min-height: 100vh;
-  padding: 110px 22px 48px;
+  width: 100%;
+  padding: clamp(76px, 8vw, 110px) clamp(14px, 4vw, 28px) 48px;
   font-family: "Plus Jakarta Sans", system-ui, sans-serif;
   background:
     radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 30%),
     radial-gradient(circle at top right, rgba(250, 204, 21, 0.22), transparent 25%),
     linear-gradient(135deg, #f8fafc, #eef4ff 48%, #fffbea);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .dashboard-bg-grid {
@@ -110,10 +136,11 @@ button:hover {
 }
 
 .dashboard-container {
-  max-width: 1220px;
+  width: min(1220px, 100%);
   margin: 0 auto;
   position: relative;
   z-index: 1;
+  min-width: 0;
 }
 
 .dashboard-error-box {
@@ -128,16 +155,17 @@ button:hover {
 
 .dashboard-hero {
   display: grid;
-  grid-template-columns: 1.35fr 0.65fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
   gap: 26px;
   align-items: center;
-  padding: 38px;
-  border-radius: 36px;
+  padding: clamp(24px, 4vw, 38px);
+  border-radius: clamp(26px, 5vw, 36px);
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(22px);
   border: 1px solid rgba(255, 255, 255, 0.92);
   box-shadow: 0 30px 80px rgba(37, 99, 235, 0.12);
   margin-bottom: 24px;
+  min-width: 0;
 }
 
 .dashboard-hero-content {
@@ -151,24 +179,24 @@ button:hover {
   margin-bottom: 18px;
 }
 
-.dashboard-badge-primary {
+.dashboard-badge-primary,
+.dashboard-badge-live {
   padding: 8px 13px;
   border-radius: 999px;
-  background: #eef4ff;
-  color: #2563eb;
   font-size: 11px;
   font-weight: 900;
+}
+
+.dashboard-badge-primary {
+  background: #eef4ff;
+  color: #2563eb;
   letter-spacing: 0.6px;
   text-transform: uppercase;
 }
 
 .dashboard-badge-live {
-  padding: 8px 13px;
-  border-radius: 999px;
   background: #ecfdf5;
   color: #16a34a;
-  font-size: 11px;
-  font-weight: 900;
   display: flex;
   gap: 7px;
   align-items: center;
@@ -183,11 +211,12 @@ button:hover {
 
 .dashboard-hero-title {
   margin: 0 0 14px;
-  font-size: 47px;
+  font-size: clamp(31px, 6vw, 47px);
   line-height: 1.08;
   letter-spacing: -1.5px;
   color: #0f172a;
   font-weight: 950;
+  overflow-wrap: break-word;
 }
 
 .dashboard-name-text {
@@ -212,25 +241,25 @@ button:hover {
   margin-top: 26px;
 }
 
-.dashboard-primary-button {
-  border: none;
+.dashboard-primary-button,
+.dashboard-secondary-button {
   padding: 14px 22px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #ffffff;
   font-weight: 900;
   cursor: pointer;
+}
+
+.dashboard-primary-button {
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
   box-shadow: 0 16px 30px rgba(37, 99, 235, 0.26);
 }
 
 .dashboard-secondary-button {
   border: 1px solid #dce8ff;
-  padding: 14px 22px;
-  border-radius: 16px;
   background: #ffffff;
   color: #2563eb;
-  font-weight: 900;
-  cursor: pointer;
 }
 
 .dashboard-progress-card {
@@ -244,8 +273,8 @@ button:hover {
 }
 
 .dashboard-ring-outer {
-  width: 190px;
-  height: 190px;
+  width: clamp(150px, 22vw, 190px);
+  height: clamp(150px, 22vw, 190px);
 }
 
 .dashboard-ring-fill {
@@ -257,8 +286,8 @@ button:hover {
 }
 
 .dashboard-ring-inner {
-  width: 136px;
-  height: 136px;
+  width: 72%;
+  height: 72%;
   border-radius: 50%;
   background: #ffffff;
   display: flex;
@@ -269,7 +298,7 @@ button:hover {
 }
 
 .dashboard-ring-value {
-  font-size: 38px;
+  font-size: clamp(30px, 6vw, 38px);
   font-weight: 950;
   color: #0f172a;
 }
@@ -291,7 +320,7 @@ button:hover {
 
 .dashboard-stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 28px;
 }
@@ -306,6 +335,7 @@ button:hover {
   backdrop-filter: blur(18px);
   border: 1px solid rgba(255, 255, 255, 0.94);
   box-shadow: 0 16px 36px rgba(37, 99, 235, 0.08);
+  min-width: 0;
 }
 
 .dashboard-stat-icon {
@@ -316,6 +346,7 @@ button:hover {
   place-items: center;
   background: linear-gradient(135deg, #eef4ff, #fef3c7);
   font-size: 25px;
+  flex-shrink: 0;
 }
 
 .dashboard-stat-label {
@@ -335,8 +366,9 @@ button:hover {
 
 .dashboard-content-grid {
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
   gap: 26px;
+  min-width: 0;
 }
 
 .dashboard-section-header {
@@ -350,7 +382,7 @@ button:hover {
 
 .dashboard-section-title {
   margin: 0;
-  font-size: 27px;
+  font-size: clamp(22px, 4vw, 27px);
   font-weight: 950;
   color: #0f172a;
   letter-spacing: -0.7px;
@@ -373,22 +405,22 @@ button:hover {
   border: 1px solid #e2e8f0;
 }
 
-.dashboard-module-list {
+.dashboard-module-list,
+.dashboard-side {
   display: flex;
   flex-direction: column;
   gap: 17px;
+  min-width: 0;
 }
 
-.dashboard-module-card {
-  padding: 23px;
+.dashboard-module-card,
+.dashboard-side-card {
+  padding: clamp(18px, 4vw, 23px);
   border-radius: 28px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.94),
-    rgba(255, 255, 255, 0.78)
-  );
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.96);
   box-shadow: 0 16px 38px rgba(37, 99, 235, 0.08);
+  min-width: 0;
 }
 
 .dashboard-module-card.is-locked {
@@ -405,6 +437,7 @@ button:hover {
   display: flex;
   gap: 15px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .dashboard-module-icon {
@@ -428,6 +461,7 @@ button:hover {
 
 .dashboard-module-content {
   flex: 1;
+  min-width: 0;
 }
 
 .dashboard-module-title-row {
@@ -444,6 +478,7 @@ button:hover {
   font-weight: 950;
   line-height: 1.35;
   color: #0f172a;
+  overflow-wrap: break-word;
 }
 
 .dashboard-module-title.is-muted,
@@ -480,14 +515,23 @@ button:hover {
   font-weight: 700;
 }
 
-.dashboard-progress-track {
-  height: 10px;
-  background: #eef2f7;
+.dashboard-progress-track,
+.dashboard-side-track {
   border-radius: 999px;
+  background: #eef2f7;
   overflow: hidden;
 }
 
-.dashboard-progress-fill {
+.dashboard-progress-track {
+  height: 10px;
+}
+
+.dashboard-side-track {
+  height: 11px;
+}
+
+.dashboard-progress-fill,
+.dashboard-side-fill {
   height: 100%;
   border-radius: 999px;
   transition: width 0.7s ease;
@@ -502,9 +546,11 @@ button:hover {
   margin-top: 8px;
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   font-size: 12px;
   color: #64748b;
   font-weight: 850;
+  flex-wrap: wrap;
 }
 
 .dashboard-lesson-list {
@@ -523,6 +569,7 @@ button:hover {
   cursor: pointer;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
+  min-width: 0;
 }
 
 .dashboard-lesson-row.is-done {
@@ -550,6 +597,7 @@ button:hover {
   display: grid;
   place-items: center;
   background: #f8fafc;
+  flex-shrink: 0;
 }
 
 .dashboard-lesson-icon.is-done {
@@ -565,6 +613,7 @@ button:hover {
   font-size: 14px;
   font-weight: 900;
   color: #0f172a;
+  overflow-wrap: break-word;
 }
 
 .dashboard-lesson-sub {
@@ -604,20 +653,6 @@ button:hover {
   background: #f1f5f9;
 }
 
-.dashboard-side {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.dashboard-side-card {
-  padding: 23px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.94);
-  box-shadow: 0 16px 38px rgba(37, 99, 235, 0.08);
-}
-
 .dashboard-side-title {
   margin: 0 0 15px;
   font-size: 16px;
@@ -634,6 +669,7 @@ button:hover {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   margin-bottom: 14px;
+  min-width: 0;
 }
 
 .dashboard-next-icon {
@@ -644,6 +680,7 @@ button:hover {
   place-items: center;
   background: #eef4ff;
   font-size: 22px;
+  flex-shrink: 0;
 }
 
 .dashboard-next-module {
@@ -658,6 +695,7 @@ button:hover {
   font-size: 15px;
   color: #0f172a;
   font-weight: 950;
+  overflow-wrap: break-word;
 }
 
 .dashboard-next-button {
@@ -678,19 +716,6 @@ button:hover {
   font-size: 14px;
   font-weight: 850;
   margin-bottom: 10px;
-}
-
-.dashboard-side-track {
-  height: 11px;
-  border-radius: 999px;
-  background: #eef2f7;
-  overflow: hidden;
-}
-
-.dashboard-side-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #2563eb, #60a5fa, #facc15);
 }
 
 .dashboard-mini-stats {
@@ -723,22 +748,25 @@ button:hover {
   margin-top: 9px;
 }
 
+.dashboard-empty-state,
+.dashboard-empty-big,
+.dashboard-empty-side {
+  background: #ffffff;
+  color: #64748b;
+  line-height: 1.6;
+  font-weight: 800;
+}
+
 .dashboard-empty-state {
   padding: 16px;
   border-radius: 16px;
   border: 1.5px dashed #cbd5e1;
-  color: #94a3b8;
-  font-weight: 800;
-  background: #ffffff;
 }
 
 .dashboard-empty-big {
   padding: 26px;
   border-radius: 24px;
-  background: #ffffff;
   border: 1px solid #e2e8f0;
-  color: #94a3b8;
-  font-weight: 850;
 }
 
 .dashboard-empty-side {
@@ -746,9 +774,6 @@ button:hover {
   border-radius: 18px;
   border: 1.5px dashed #cbd5e1;
   background: #f8fafc;
-  color: #64748b;
-  line-height: 1.6;
-  font-weight: 800;
 }
 
 .dashboard-loader-wrap {
@@ -803,130 +828,188 @@ button:hover {
   font-weight: 750;
 }
 
-@media (max-width: 980px) {
-  .content-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .dashboard-hero {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-stats-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* =========================
-   PESAN GURU MELAYANG
-========================= */
-
 .dashboard-page .dashboard-container .guru-feedback-floating {
-  position: absolute !important;
-
-  top: 345px !important;
-  left: 20px !important;
-
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 0 22px !important;
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-start !important;
   gap: 12px !important;
-
-  width: 340px !important;
-
-  padding: 12px 16px !important;
-
+  padding: 14px 16px !important;
   border-radius: 22px !important;
-
   background: rgba(255, 255, 255, 0.92) !important;
-
   border: 1.5px solid rgba(250, 204, 21, 0.4) !important;
-
-  box-shadow:
-    0 10px 25px rgba(15, 23, 42, 0.08),
-    0 0 16px rgba(250, 204, 21, 0.1) !important;
-
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08) !important;
   backdrop-filter: blur(14px) !important;
-
   z-index: 20 !important;
-
-  animation: floatFeedback 4s ease-in-out infinite !important;
 }
 
 .dashboard-page .dashboard-container .guru-feedback-icon {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
   display: grid !important;
   place-items: center !important;
-
   background: linear-gradient(135deg, #facc15, #fde68a) !important;
-
-  border-radius: 12px !important;
-
-  font-size: 17px !important;
+  border-radius: 13px !important;
+  font-size: 18px !important;
 }
 
-.dashboard-page .dashboard-container .guru-feedback-content p {
-  margin: 0 !important;
-
-  color: #334155 !important;
-
-  font-size: 13px !important;
-  line-height: 1.4 !important;
-
-  font-weight: 700 !important;
+.dashboard-page .dashboard-container .guru-feedback-content {
+  min-width: 0 !important;
 }
 
 .dashboard-page .dashboard-container .guru-feedback-label {
   display: inline-block !important;
-
   width: fit-content !important;
-
   background: #fef3c7 !important;
   color: #92400e !important;
-
   padding: 6px 12px !important;
-
   border-radius: 999px !important;
-
   font-size: 10px !important;
   font-weight: 950 !important;
   letter-spacing: 1px !important;
   text-transform: uppercase !important;
-
-  margin-bottom: 0 !important;
+  margin-bottom: 8px !important;
 }
 
 .dashboard-page .dashboard-container .guru-feedback-content p {
   margin: 0 !important;
-
   color: #334155 !important;
-
   font-size: 14px !important;
-  line-height: 1.4 !important;
-
+  line-height: 1.55 !important;
   font-weight: 700 !important;
+  overflow-wrap: break-word !important;
 }
 
 .dashboard-page .dashboard-container .guru-feedback-content small {
   display: inline-block !important;
-
-  margin-top: 0 !important;
-
+  margin-top: 8px !important;
   color: #94a3b8 !important;
-
   font-size: 11px !important;
   font-weight: 800 !important;
 }
 
-@keyframes floatFeedback {
-  0%,
-  100% {
-    transform: translateY(0);
+@media (max-width: 980px) {
+  .dashboard-page {
+    padding-top: 86px;
   }
 
-  50% {
-    transform: translateY(-6px);
+  .dashboard-hero,
+  .dashboard-content-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-progress-card {
+    width: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  .dashboard-side {
+    order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  button:hover,
+  .module-card:hover,
+  .stat-card:hover,
+  .dashboard-module-card:hover,
+  .dashboard-stat-card:hover,
+  .dashboard-lesson-row:hover {
+    transform: none !important;
+  }
+
+  .dashboard-page {
+    padding: 76px 12px 34px;
+    overflow-x: hidden !important;
+  }
+
+  .dashboard-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-hero {
+    padding: 20px !important;
+    border-radius: 26px !important;
+    gap: 20px;
+  }
+
+  .dashboard-hero-title {
+    font-size: 30px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.8px !important;
+  }
+
+  .dashboard-hero-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .dashboard-primary-button,
+  .dashboard-secondary-button {
+    width: 100% !important;
+  }
+
+  .dashboard-badges {
+    gap: 8px;
+  }
+
+  .dashboard-progress-card {
+    padding: 18px;
+    animation: none;
+  }
+
+  .dashboard-ring-outer {
+    width: 150px;
+    height: 150px;
+  }
+
+  .dashboard-stat-card {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .dashboard-module-card,
+  .dashboard-side-card {
+    border-radius: 24px;
+    padding: 18px;
+  }
+
+  .dashboard-module-header-left {
+    gap: 12px;
+  }
+
+  .dashboard-module-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 17px;
+    font-size: 22px;
+  }
+
+  .dashboard-module-title {
+    font-size: 17px;
+  }
+
+  .dashboard-lesson-row {
+    padding: 12px;
+  }
+
+  .dashboard-mini-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-page .dashboard-container .guru-feedback-floating {
+    flex-direction: row !important;
+    border-radius: 20px !important;
   }
 }

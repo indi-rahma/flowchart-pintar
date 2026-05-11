@@ -16,23 +16,19 @@ import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 
 const FlowNode = ({ data, selected }) => {
-  const strokeColor = selected ? "#2563EB" : "#111827";
+  const strokeColor = selected ? "#007AFF" : "#1D1D1F";
 
   return (
     <div style={styles.nodeBox}>
-      {/* TOP */}
       <Handle id="top-source" type="source" position={Position.Top} style={{ ...styles.handle, left: "45%" }} />
       <Handle id="top-target" type="target" position={Position.Top} style={{ ...styles.handle, left: "55%" }} />
 
-      {/* RIGHT */}
       <Handle id="right-source" type="source" position={Position.Right} style={{ ...styles.handle, top: "45%" }} />
       <Handle id="right-target" type="target" position={Position.Right} style={{ ...styles.handle, top: "55%" }} />
 
-      {/* BOTTOM */}
       <Handle id="bottom-source" type="source" position={Position.Bottom} style={{ ...styles.handle, left: "45%" }} />
       <Handle id="bottom-target" type="target" position={Position.Bottom} style={{ ...styles.handle, left: "55%" }} />
 
-      {/* LEFT */}
       <Handle id="left-source" type="source" position={Position.Left} style={{ ...styles.handle, top: "45%" }} />
       <Handle id="left-target" type="target" position={Position.Left} style={{ ...styles.handle, top: "55%" }} />
 
@@ -40,7 +36,7 @@ const FlowNode = ({ data, selected }) => {
         <div
           style={{
             ...styles.textOnlyNode,
-            border: selected ? "2px dashed #2563EB" : "2px dashed #CBD5E1",
+            border: selected ? "2px dashed #007AFF" : "2px dashed #D2D2D7",
           }}
         >
           {data.label}
@@ -84,8 +80,8 @@ const FlowNode = ({ data, selected }) => {
             {data.shape === "predefined" && (
               <>
                 <rect x="10" y="25" width="160" height="60" rx="8" fill="#fff" stroke={strokeColor} strokeWidth="3" />
-                <line x1="30" y1="25" x2="30" y2="85" stroke="#111827" strokeWidth="3" />
-                <line x1="150" y1="25" x2="150" y2="85" stroke="#111827" strokeWidth="3" />
+                <line x1="30" y1="25" x2="30" y2="85" stroke="#1D1D1F" strokeWidth="3" />
+                <line x1="150" y1="25" x2="150" y2="85" stroke="#1D1D1F" strokeWidth="3" />
               </>
             )}
 
@@ -162,12 +158,12 @@ function LatihanFlowchart() {
             type: "smoothstep",
             animated: false,
             style: {
-              stroke: "#111827",
+              stroke: "#1D1D1F",
               strokeWidth: 2.8,
             },
             markerEnd: {
               type: MarkerType.ArrowClosed,
-              color: "#111827",
+              color: "#1D1D1F",
               width: 18,
               height: 18,
             },
@@ -252,17 +248,36 @@ function LatihanFlowchart() {
   return (
     <div style={styles.page}>
       <style>{`
+        * {
+          box-sizing: border-box;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+          margin: 0;
+          overflow-x: hidden;
+          background: #F5F5F7;
+        }
+
+        .flow-layout {
+          display: grid;
+          grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+          gap: 20px;
+          align-items: stretch;
+        }
+
         .react-flow__handle {
           opacity: 0;
           transition: 0.18s ease;
         }
 
-        .react-flow__node:hover .react-flow__handle {
+        .react-flow__node:hover .react-flow__handle,
+        .react-flow__node.selected .react-flow__handle {
           opacity: 1;
         }
 
         .react-flow__handle:hover {
-          background: #FACC15 !important;
+          background: #007AFF !important;
           transform: scale(1.35);
         }
 
@@ -272,14 +287,40 @@ function LatihanFlowchart() {
         }
 
         .react-flow__edge.selected .react-flow__edge-path {
-          stroke: #2563EB !important;
+          stroke: #007AFF !important;
           stroke-width: 4px !important;
         }
 
         .react-flow__connection-path {
-          stroke: #111827;
+          stroke: #1D1D1F;
           stroke-width: 3;
           stroke-linecap: round;
+        }
+
+        .react-flow__controls {
+          border-radius: 18px;
+          overflow: hidden;
+          box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        }
+
+        .react-flow__controls-button {
+          border-bottom: 1px solid rgba(60,60,67,0.12);
+        }
+
+        @media (max-width: 768px) {
+          .flow-layout {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+
+          .react-flow__minimap {
+            display: none;
+          }
+
+          .react-flow__controls {
+            transform: scale(0.9);
+            transform-origin: bottom left;
+          }
         }
       `}</style>
 
@@ -287,9 +328,7 @@ function LatihanFlowchart() {
         <div>
           <div style={styles.badge}>LATIHAN FLOWCHART</div>
           <h1 style={styles.title}>Flowchart Builder</h1>
-          <p style={styles.subtitle}>
-            Yuk latihan membangun flowchart!
-          </p>
+          <p style={styles.subtitle}>Yuk latihan membangun flowchart!</p>
         </div>
 
         <div style={styles.actions}>
@@ -305,7 +344,7 @@ function LatihanFlowchart() {
         </div>
       </header>
 
-      <div style={styles.layout}>
+      <div className="flow-layout">
         <aside style={styles.toolbar}>
           <h3 style={styles.toolbarTitle}>Tambah Simbol</h3>
 
@@ -406,24 +445,24 @@ function LatihanFlowchart() {
                 type: "smoothstep",
                 style: {
                   strokeWidth: 2.8,
-                  stroke: "#111827",
+                  stroke: "#1D1D1F",
                 },
                 markerEnd: {
                   type: MarkerType.ArrowClosed,
-                  color: "#111827",
+                  color: "#1D1D1F",
                   width: 18,
                   height: 18,
                 },
               }}
               connectionLineStyle={{
-                stroke: "#111827",
+                stroke: "#1D1D1F",
                 strokeWidth: 2.8,
               }}
               connectionLineType="smoothstep"
               snapToGrid={true}
               snapGrid={[10, 10]}
             >
-              <Background gap={20} size={1.2} color="#CBD5E1" />
+              <Background gap={20} size={1.1} color="#D2D2D7" />
               <Controls />
               <MiniMap />
             </ReactFlow>
@@ -437,40 +476,47 @@ function LatihanFlowchart() {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#FFFFFF",
-    padding: "45px",
-    fontFamily: "Plus Jakarta Sans, Arial, sans-serif",
+    background: "linear-gradient(180deg, #F5F5F7 0%, #FFFFFF 45%, #F5F5F7 100%)",
+    padding: "clamp(14px, 4vw, 36px)",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', Arial, sans-serif",
+    overflowX: "hidden",
+    color: "#1D1D1F",
   },
 
   header: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "28px",
-    gap: "20px",
+    alignItems: "flex-start",
+    marginBottom: "22px",
+    gap: "16px",
+    flexWrap: "wrap",
   },
 
   badge: {
-    display: "inline-block",
-    background: "#000",
-    color: "#FDE047",
-    padding: "7px 13px",
-    borderRadius: "9px",
+    display: "inline-flex",
+    alignItems: "center",
+    background: "rgba(0,122,255,0.1)",
+    color: "#007AFF",
+    padding: "7px 12px",
+    borderRadius: "999px",
     fontSize: "11px",
-    fontWeight: "900",
+    fontWeight: "800",
+    letterSpacing: "0.4px",
   },
 
   title: {
     margin: "12px 0 6px",
-    fontSize: "38px",
+    fontSize: "clamp(30px, 7vw, 46px)",
     fontWeight: "900",
-    letterSpacing: "-1px",
+    letterSpacing: "-1.6px",
+    lineHeight: "1.02",
   },
 
   subtitle: {
     margin: 0,
-    color: "#64748B",
-    fontSize: "15px",
+    color: "#6E6E73",
+    fontSize: "clamp(14px, 3.4vw, 16px)",
+    fontWeight: "600",
   },
 
   actions: {
@@ -481,80 +527,80 @@ const styles = {
   },
 
   deleteBtn: {
-    padding: "13px 18px",
-    borderRadius: "14px",
+    padding: "12px 16px",
+    borderRadius: "999px",
     border: "none",
-    background: "#EF4444",
+    background: "#FF3B30",
     color: "#FFF",
-    fontWeight: "900",
+    fontWeight: "800",
     cursor: "pointer",
+    boxShadow: "0 10px 24px rgba(255,59,48,0.24)",
   },
 
   resetBtn: {
-    padding: "13px 18px",
-    borderRadius: "14px",
-    border: "3px solid #000",
-    background: "#FFF",
-    color: "#000",
-    fontWeight: "900",
+    padding: "12px 16px",
+    borderRadius: "999px",
+    border: "1px solid rgba(60,60,67,0.16)",
+    background: "rgba(255,255,255,0.8)",
+    color: "#1D1D1F",
+    fontWeight: "800",
     cursor: "pointer",
+    backdropFilter: "blur(16px)",
   },
 
   downloadBtn: {
-    padding: "13px 20px",
-    borderRadius: "14px",
+    padding: "12px 18px",
+    borderRadius: "999px",
     border: "none",
-    background: "#000",
-    color: "#FDE047",
-    fontWeight: "900",
+    background: "#007AFF",
+    color: "#FFF",
+    fontWeight: "800",
     cursor: "pointer",
-  },
-
-  layout: {
-    display: "flex",
-    gap: "25px",
-    alignItems: "stretch",
+    boxShadow: "0 12px 28px rgba(0,122,255,0.28)",
   },
 
   toolbar: {
-    width: "285px",
-    padding: "22px",
-    border: "4px solid #000",
-    borderRadius: "28px",
-    background: "#FFFFFF",
-    boxShadow: "10px 10px 0px #EAB308",
-    maxHeight: "710px",
+    width: "100%",
+    padding: "18px",
+    border: "1px solid rgba(60,60,67,0.14)",
+    borderRadius: "30px",
+    background: "rgba(255,255,255,0.78)",
+    boxShadow: "0 18px 45px rgba(0,0,0,0.08)",
+    maxHeight: "720px",
     overflowY: "auto",
+    backdropFilter: "blur(22px)",
   },
 
   toolbarTitle: {
-    margin: "0 0 18px",
-    fontSize: "19px",
+    margin: "0 0 16px",
+    fontSize: "18px",
     fontWeight: "900",
+    letterSpacing: "-0.3px",
   },
 
   toolBtn: {
     width: "100%",
-    minHeight: "58px",
+    minHeight: "56px",
     padding: "10px",
-    marginBottom: "12px",
-    borderRadius: "16px",
-    border: "2px solid #E5E7EB",
-    background: "#F8FAFC",
+    marginBottom: "10px",
+    borderRadius: "18px",
+    border: "1px solid rgba(60,60,67,0.12)",
+    background: "#FFFFFF",
     cursor: "pointer",
     fontWeight: "800",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "10px",
+    boxShadow: "0 8px 18px rgba(0,0,0,0.04)",
   },
 
   editPanel: {
     marginTop: "16px",
-    padding: "15px",
-    borderRadius: "18px",
-    background: "#F8FAFC",
-    border: "2px solid #E5E7EB",
+    padding: "14px",
+    borderRadius: "22px",
+    background: "#F5F5F7",
+    border: "1px solid rgba(60,60,67,0.12)",
   },
 
   editTitle: {
@@ -565,36 +611,39 @@ const styles = {
 
   editInput: {
     width: "100%",
-    padding: "12px",
-    borderRadius: "12px",
-    border: "2px solid #CBD5E1",
-    fontWeight: "800",
+    padding: "13px 14px",
+    borderRadius: "16px",
+    border: "1px solid rgba(60,60,67,0.18)",
+    background: "#FFFFFF",
+    fontWeight: "700",
     outline: "none",
+    fontSize: "14px",
   },
 
   doneBtn: {
     width: "100%",
     marginTop: "10px",
-    padding: "11px",
-    borderRadius: "12px",
+    padding: "12px",
+    borderRadius: "999px",
     border: "none",
-    background: "#000",
-    color: "#FDE047",
+    background: "#1D1D1F",
+    color: "#FFF",
     fontWeight: "900",
     cursor: "pointer",
   },
 
   canvasWrap: {
-    flex: 1,
+    minWidth: 0,
   },
 
   canvas: {
-    height: "710px",
-    border: "4px solid #000",
-    borderRadius: "30px",
+    height: "min(720px, 72vh)",
+    minHeight: "520px",
+    border: "1px solid rgba(60,60,67,0.14)",
+    borderRadius: "32px",
     overflow: "hidden",
-    background: "#FFF",
-    boxShadow: "14px 14px 0px #EAB308",
+    background: "#FFFFFF",
+    boxShadow: "0 20px 55px rgba(0,0,0,0.1)",
   },
 
   nodeBox: {
@@ -610,10 +659,10 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     textAlign: "center",
-    fontWeight: "900",
+    fontWeight: "850",
     fontSize: "12px",
     lineHeight: "1.25",
-    color: "#111827",
+    color: "#1D1D1F",
     zIndex: 3,
     pointerEvents: "none",
   },
@@ -622,28 +671,28 @@ const styles = {
     minWidth: "150px",
     minHeight: "56px",
     padding: "12px",
-    borderRadius: "12px",
-    background: "rgba(255,255,255,0.88)",
-    color: "#111827",
+    borderRadius: "16px",
+    background: "rgba(255,255,255,0.92)",
+    color: "#1D1D1F",
     fontSize: "14px",
     fontWeight: "800",
     textAlign: "center",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 6px 18px rgba(15,23,42,0.08)",
+    boxShadow: "0 12px 24px rgba(0,0,0,0.08)",
   },
 
   handle: {
-    width: "11px",
-    height: "11px",
-    background: "#fff",
-    border: "2px solid #111827",
+    width: "12px",
+    height: "12px",
+    background: "#FFFFFF",
+    border: "2px solid #1D1D1F",
     zIndex: 10,
   },
 
   previewOval: {
-    border: "2px solid #111827",
+    border: "2px solid #1D1D1F",
     borderRadius: "999px",
     padding: "8px 24px",
     background: "#FFF",
@@ -651,8 +700,8 @@ const styles = {
   },
 
   previewProcess: {
-    border: "2px solid #111827",
-    borderRadius: "6px",
+    border: "2px solid #1D1D1F",
+    borderRadius: "8px",
     padding: "8px 24px",
     background: "#FFF",
     fontSize: "12px",
@@ -661,7 +710,7 @@ const styles = {
   previewDecision: {
     width: "34px",
     height: "34px",
-    border: "2px solid #111827",
+    border: "2px solid #1D1D1F",
     transform: "rotate(45deg)",
     display: "flex",
     justifyContent: "center",
@@ -671,7 +720,7 @@ const styles = {
   },
 
   previewIO: {
-    border: "2px solid #111827",
+    border: "2px solid #1D1D1F",
     transform: "skew(-14deg)",
     padding: "8px 18px",
     background: "#FFF",
@@ -679,7 +728,7 @@ const styles = {
   },
 
   previewDocument: {
-    border: "2px solid #111827",
+    border: "2px solid #1D1D1F",
     borderRadius: "6px 6px 18px 18px",
     padding: "8px 20px",
     background: "#FFF",
@@ -687,7 +736,7 @@ const styles = {
   },
 
   previewDatabase: {
-    border: "2px solid #111827",
+    border: "2px solid #1D1D1F",
     borderRadius: "50%",
     padding: "8px 18px",
     background: "#FFF",
@@ -695,21 +744,21 @@ const styles = {
   },
 
   previewText: {
-    border: "2px dashed #111827",
+    border: "2px dashed #1D1D1F",
     padding: "8px 22px",
-    borderRadius: "10px",
+    borderRadius: "12px",
     background: "#FFF",
     fontSize: "12px",
   },
 
   note: {
-    marginTop: "18px",
+    marginTop: "16px",
     padding: "14px",
-    borderRadius: "16px",
-    background: "#FEF9C3",
-    color: "#854D0E",
+    borderRadius: "20px",
+    background: "rgba(0,122,255,0.08)",
+    color: "#005BBB",
     fontSize: "12px",
-    fontWeight: "800",
+    fontWeight: "750",
     lineHeight: "1.6",
   },
 };

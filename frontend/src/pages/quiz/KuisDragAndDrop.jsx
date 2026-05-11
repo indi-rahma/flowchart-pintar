@@ -57,8 +57,8 @@ function getNodeBox(node) {
     node?.position ||
     { x: 0, y: 0 };
 
-  const width = node?.measured?.width || node?.width || 170;
-  const height = node?.measured?.height || node?.height || 76;
+  const width = node?.measured?.width || node?.width || 150;
+  const height = node?.measured?.height || node?.height || 70;
 
   return {
     x: position.x,
@@ -175,20 +175,20 @@ function FlowNode({ data }) {
 
   const base = {
     position: "relative",
-    minWidth: 170,
-    minHeight: 76,
-    padding: "14px 18px",
+    minWidth: 150,
+    minHeight: 70,
+    padding: "12px 16px",
     background: "#fff",
-    borderWidth: 2.5,
+    borderWidth: 2.3,
     borderStyle: "solid",
     borderColor: "#f59e0b",
-    color: "#0f172a",
+    color: "#1D1D1F",
     fontWeight: 900,
     textAlign: "center",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 16px 30px rgba(15,23,42,0.12)",
+    boxShadow: "0 14px 28px rgba(15,23,42,0.1)",
   };
 
   const shape =
@@ -217,10 +217,10 @@ function FlowNode({ data }) {
       : type === "decision"
       ? {
           ...base,
-          width: 145,
-          height: 145,
-          minWidth: 145,
-          minHeight: 145,
+          width: 132,
+          height: 132,
+          minWidth: 132,
+          minHeight: 132,
           padding: 16,
           transform: "rotate(45deg)",
           borderColor: "#8b5cf6",
@@ -237,7 +237,7 @@ function FlowNode({ data }) {
       ? {
           transform: "rotate(-45deg)",
           display: "block",
-          maxWidth: 104,
+          maxWidth: 96,
           lineHeight: 1.25,
         }
       : type === "input"
@@ -303,25 +303,27 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
   }, [items]);
 
   const buildAutoLayout = useCallback(() => {
+    const isMobile = window.innerWidth <= 768;
+
     const decisionIndex = sortedItems.findIndex(
       (item) => getNodeType(item) === "decision"
     );
 
     return sortedItems.map((item, index) => {
-      let x = 420;
-      let y = 70 + index * 145;
+      let x = isMobile ? 180 : 420;
+      let y = 70 + index * 140;
 
       if (decisionIndex !== -1 && index > decisionIndex) {
         const after = index - decisionIndex;
 
         if (after === 1) {
-          x = 210;
+          x = isMobile ? 40 : 210;
           y = 130 + decisionIndex * 145;
         } else if (after === 2) {
-          x = 640;
+          x = isMobile ? 300 : 640;
           y = 130 + decisionIndex * 145;
         } else {
-          x = 420;
+          x = isMobile ? 180 : 420;
           y = 260 + (index - decisionIndex) * 120;
         }
       }
@@ -487,7 +489,14 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
       <style>{animationStyle}</style>
 
       <div style={heroStyle}>
-        <div>
+  <div
+    className="quiz-hero-text"
+    style={{
+      flex: "1 1 320px",
+      minWidth: 0,
+      width: "100%",
+    }}
+  >
           <p style={eyebrowStyle}>Flowchart Canvas Challenge</p>
           <h3 style={questionStyle}>{data?.question}</h3>
           <p style={hintStyle}>
@@ -495,10 +504,14 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
             koneksi. Untuk percabangan, gunakan jalur <b>Ya</b> dan <b>Tidak</b>.
           </p>
         </div>
-
-        <button type="button" onClick={resetCanvas} style={resetBtnStyle}>
-          🔄 Rapikan Lagi
-        </button>
+<button
+  type="button"
+  className="quiz-reset-btn"
+  onClick={resetCanvas}
+  style={resetBtnStyle}
+>
+  🔄 Rapikan Lagi
+</button>
       </div>
 
       <div style={legendStyle}>
@@ -524,7 +537,7 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
           nodesConnectable={true}
           elementsSelectable={false}
         >
-          <Background gap={20} size={1.2} color="#c7d2fe" />
+          <Background gap={20} size={1.2} color="#d2d2d7" />
           <Controls />
         </ReactFlow>
       </div>
@@ -547,95 +560,104 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
   );
 }
 
-const wrapperStyle = { padding: 24 };
+const wrapperStyle = {
+  padding: "clamp(14px, 4vw, 24px)",
+};
 
 const heroStyle = {
+  width: "100%",
+  minWidth: 0,
   display: "flex",
   justifyContent: "space-between",
   alignItems: "flex-start",
-  gap: 18,
+  gap: 16,
   marginBottom: 16,
-  padding: 20,
-  borderRadius: 24,
+  padding: "clamp(16px, 4vw, 22px)",
+  borderRadius: 26,
   background:
-    "radial-gradient(circle at top right,rgba(99,102,241,.16),transparent 35%),linear-gradient(135deg,#ffffff,#f8fafc)",
-  border: "1px solid #e2e8f0",
+    "radial-gradient(circle at top right, rgba(0,122,255,.12), transparent 35%), linear-gradient(135deg,#ffffff,#f8fafc)",
+  border: "1px solid rgba(60,60,67,0.12)",
+  boxShadow: "0 14px 32px rgba(15,23,42,.06)",
+  flexWrap: "wrap",
 };
 
 const eyebrowStyle = {
   margin: "0 0 7px",
-  fontSize: 12,
+  fontSize: 11,
   fontWeight: 900,
-  color: "#6366f1",
+  color: "#007AFF",
   textTransform: "uppercase",
   letterSpacing: 1,
 };
 
 const questionStyle = {
   margin: "0 0 8px",
-  color: "#0f172a",
-  fontSize: 22,
-  lineHeight: 1.4,
+  color: "#1D1D1F",
+  fontSize: "clamp(18px, 5vw, 24px)",
+  lineHeight: 1.35,
   fontWeight: 900,
+  letterSpacing: "-0.5px",
 };
 
 const hintStyle = {
   margin: 0,
-  color: "#64748b",
-  fontSize: 14,
-  fontWeight: 700,
-  lineHeight: 1.7,
+  color: "#6E6E73",
+  fontSize: "clamp(13px, 3.5vw, 14px)",
+  fontWeight: 650,
+  lineHeight: 1.65,
 };
 
 const resetBtnStyle = {
   border: "none",
-  background: "linear-gradient(135deg,#111827,#020617)",
-  color: "#FDE047",
+  background: "#007AFF",
+  color: "#FFFFFF",
   padding: "12px 16px",
-  borderRadius: 14,
+  borderRadius: 999,
   fontWeight: 900,
   cursor: "pointer",
-  boxShadow: "0 12px 24px rgba(15,23,42,.16)",
+  boxShadow: "0 12px 24px rgba(0,122,255,.18)",
   whiteSpace: "nowrap",
+flexShrink: 0,
 };
 
 const legendStyle = {
   display: "flex",
-  gap: 10,
+  gap: 8,
   flexWrap: "wrap",
   marginBottom: 14,
-  color: "#475569",
+  color: "#6E6E73",
   fontSize: 12,
-  fontWeight: 900,
+  fontWeight: 850,
 };
 
 const canvasOuterStyle = {
   width: "100%",
-  height: 610,
+  height: "clamp(520px, 72vh, 650px)",
   borderRadius: 28,
-  border: "2px dashed #6366f1",
+  border: "1px solid rgba(60,60,67,0.12)",
   overflow: "hidden",
   background:
     "radial-gradient(circle at top,#eef2ff,transparent 35%),linear-gradient(180deg,#ffffff,#f8fafc)",
-  boxShadow:
-    "inset 0 0 0 1px rgba(255,255,255,.7),0 18px 40px rgba(15,23,42,.08)",
+  boxShadow: "0 18px 45px rgba(15,23,42,.08)",
 };
 
 const statusStyle = {
   marginTop: 14,
-  padding: "15px 16px",
-  borderRadius: 18,
+  padding: "14px 16px",
+  borderRadius: 20,
   border: "1px solid",
-  fontWeight: 900,
+  fontWeight: 850,
   textAlign: "center",
+  fontSize: "clamp(13px, 3.5vw, 14px)",
+  lineHeight: 1.5,
 };
 
 const emptyStyle = {
   marginTop: 16,
   padding: 18,
-  borderRadius: 14,
-  background: "#f8fafc",
-  color: "#64748b",
+  borderRadius: 18,
+  background: "#F5F5F7",
+  color: "#6E6E73",
   textAlign: "center",
   fontWeight: 700,
 };
@@ -653,36 +675,41 @@ const nodeTypeStyle = {
   display: "block",
   marginBottom: 4,
   fontSize: 10,
-  color: "#64748b",
+  color: "#6E6E73",
   letterSpacing: ".8px",
   fontWeight: 900,
 };
 
 const yesLabelStyle = {
   position: "absolute",
-  right: -40,
+  right: -38,
   top: "45%",
   fontSize: 11,
   fontWeight: 900,
-  color: "#16a34a",
-  background: "#dcfce7",
+  color: "#16A34A",
+  background: "#DCFCE7",
   padding: "3px 7px",
   borderRadius: 999,
 };
 
 const noLabelStyle = {
   position: "absolute",
-  left: "38%",
-  bottom: -32,
+  left: "36%",
+  bottom: -30,
   fontSize: 11,
   fontWeight: 900,
-  color: "#dc2626",
-  background: "#fee2e2",
+  color: "#DC2626",
+  background: "#FEE2E2",
   padding: "3px 7px",
   borderRadius: 999,
 };
 
 const animationStyle = `
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .react-flow__handle {
   opacity: 0 !important;
   background: transparent !important;
@@ -694,6 +721,23 @@ const animationStyle = `
 .react-flow__selection,
 .react-flow__nodesselection {
   display: none !important;
+}
+
+.react-flow__controls {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(15,23,42,.12);
+}
+
+@media (max-width: 768px) {
+  .quiz-hero-text {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+  .quiz-reset-btn {
+    width: 100% !important;
+  }
 }
 `;
 
