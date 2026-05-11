@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { API_BASE } from "../config";
+import { API_BASE } from "./config";
 
 const Pengaturan = () => {
   const user = JSON.parse(localStorage.getItem("user"));

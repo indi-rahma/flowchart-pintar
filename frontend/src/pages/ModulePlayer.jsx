@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { API_BASE } from "../config";
+import { API_BASE } from "./config";
 
 const ModulePlayer = () => {
   const { id } = useParams();

@@ -5,7 +5,7 @@ import MemuatModul from "./MemuatModul";
 import HeaderModulSaya from "./HeaderModulSaya";
 import RingkasanModul from "./RingkasanModul";
 import DaftarKartuModul from "./DaftarKartuModul";
-import { API_BASE } from "../config";
+import { API_BASE } from "../../config";
 
 const ModulSaya = () => {
   const navigate = useNavigate();

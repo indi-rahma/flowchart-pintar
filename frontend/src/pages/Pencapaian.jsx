@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { downloadCertificate } from "./Sertifikat";
-import { API_BASE } from "../config";
+import { API_BASE } from "./config";
 
 const Pencapaian = () => {
   const [courses, setCourses] = useState([]);

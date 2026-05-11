@@ -4,7 +4,7 @@ import KomponenFormProfil from "./FormProfil";
 import KomponenKeamananAkun from "./KeamananAkun";
 import KomponenPreferensiBelajar from "./PreferensiBelajar";
 import { styles, globalStyle } from "./stylePengaturan";
-import { API_BASE } from "../config";
+import { API_BASE } from "../../config";
 
 const Pengaturan = () => {
   const user = JSON.parse(localStorage.getItem("user"));
