@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from "../config";
 
 /**
  * THE ARCHITECT: GURU DASHBOARD V3.0 (PRO VERSION)
@@ -40,7 +41,7 @@ const DashboardGuru = () => {
       try {
         setLoading(true);
         // Memanggil API real milikmu
-        const response = await fetch(`http://localhost:5000/api/dashboard-guru?userId=${userId}`);
+        const response = await fetch(`${API_BASE}/api/dashboard-guru?userId=${userId}`);
         
         if (!response.ok) throw new Error("Gagal menyambung ke server database.");
         

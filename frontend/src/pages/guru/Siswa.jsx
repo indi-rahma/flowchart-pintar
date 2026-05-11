@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { API_BASE } from "../config";
+
 
 function SiswaGuru() {
   const [siswa, setSiswa] = useState([]);
@@ -15,7 +17,7 @@ function SiswaGuru() {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:5000/api/siswa");
+      const response = await fetch(`${API_BASE}/api/siswa`);
 
       if (!response.ok) {
         throw new Error(`HTTP Error! Status: ${response.status}`);
@@ -60,7 +62,7 @@ function SiswaGuru() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/evaluasi", {
+    const res = await fetch(`${API_BASE}/api/evaluasi`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -203,7 +205,7 @@ function SiswaGuru() {
       <footer style={styles.footer}>
         <div style={styles.serverInfo}>
           <div style={styles.dot}></div>
-          BACKEND STATUS: http://localhost:5000/api/siswa
+          BACKEND STATUS: ${API_BASE}/api/siswa
         </div>
         <p>© 2026 Flowchart Pintar - Dashboard Guru</p>
       </footer>

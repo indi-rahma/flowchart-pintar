@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "../config";
 
 function GuruModul() {
   const navigate = useNavigate();
@@ -98,7 +99,7 @@ function GuruModul() {
       setError("");
 
       const res = await fetch(
-        `http://localhost:5000/api/modules?userId=${userId}`
+        `${API_BASE}/api/modules?userId=${userId}`
       );
 
       if (!res.ok) throw new Error("Gagal mengambil data modul.");
@@ -121,7 +122,7 @@ function GuruModul() {
       setQuizzes([]);
 
       const res = await fetch(
-        `http://localhost:5000/api/quizzes?moduleId=${moduleId}`
+        `${API_BASE}/api/quizzes?moduleId=${moduleId}`
       );
 
       if (!res.ok) throw new Error("Gagal mengambil data quiz.");
@@ -151,7 +152,7 @@ function GuruModul() {
     try {
       setIsSubmittingModule(true);
 
-      const res = await fetch("http://localhost:5000/api/modules", {
+      const res = await fetch(`${API_BASE}/api/modules`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -262,7 +263,7 @@ function GuruModul() {
         order_index: Number(itemOrderIndex) || 0,
       };
 
-      const res = await fetch("http://localhost:5000/api/module-items", {
+      const res = await fetch(`${API_BASE}/api/module-items`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -281,7 +282,7 @@ function GuruModul() {
           formData.append("image", itemImages[i]);
           formData.append("image_order", i + 1);
 
-          await fetch("http://localhost:5000/api/material-images", {
+          await fetch(`${API_BASE}/api/material-images`, {
             method: "POST",
             body: formData,
           });

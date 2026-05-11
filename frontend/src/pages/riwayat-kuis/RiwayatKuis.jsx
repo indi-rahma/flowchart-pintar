@@ -3,6 +3,7 @@ import TampilanLoading from "./TampilanLoading";
 import BagianStatistik from "./BagianStatistik";
 import DaftarRiwayatKuis from "./DaftarRiwayatKuis";
 import "./RiwayatKuis.css";
+import { API_BASE } from "../config";
 
 const RiwayatKuis = () => {
   const [results, setResults] = useState([]);
@@ -69,7 +70,7 @@ const RiwayatKuis = () => {
         setLoading(true);
 
         const res = await fetch(
-          `http://localhost:5000/api/user/quiz-history?user_id=${userId}`
+          `${API_BASE}/api/user/quiz-history?user_id=${userId}`
         );
 
         if (!res.ok) {

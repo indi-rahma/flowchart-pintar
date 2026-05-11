@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { API_BASE } from "../config";
 
 const PengaturanAdmin = () => {
   const [profile, setProfile] = useState(null);
@@ -42,7 +43,7 @@ const PengaturanAdmin = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`http://localhost:5000/api/users/${userId}`);
+      const res = await fetch(`${API_BASE}/api/users/${userId}`);
       if (!res.ok) throw new Error("Gagal mengambil data profil.");
 
       const data = await res.json();
@@ -124,7 +125,7 @@ const PengaturanAdmin = () => {
         payload.newPassword = formData.newPassword;
       }
 
-      const res = await fetch(`http://localhost:5000/api/users/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

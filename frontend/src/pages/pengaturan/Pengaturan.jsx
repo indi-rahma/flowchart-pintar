@@ -3,8 +3,8 @@ import KartuProfil from "./KartuProfil";
 import FormAkun from "./FormAkun";
 import PreferensiAkun from "./PreferensiAkun";
 import "./Pengaturan.css";
+import { API_BASE } from "../config";
 
-const API_BASE = "http://localhost:5000";
 
 const Pengaturan = () => {
   const user = JSON.parse(localStorage.getItem("user") || "null");

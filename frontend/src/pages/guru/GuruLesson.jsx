@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import FormMateri from "./FormMateri";
+import { API_BASE } from "../config";
 
 function GuruLesson() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const moduleId = Number(id);
-  const API_BASE = "http://localhost:5000";
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);

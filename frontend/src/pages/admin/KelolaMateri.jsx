@@ -1,12 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { API_BASE } from "../config";
 
-/**
- * 📚 KELOLA MATERI (VIA MODULES API) v6.0
- * ----------------------------------------------------
- * Challenge: 400 Lines of High-Performance Code
- * Target API: http://localhost:5000/api/admin/modules
- * Logic: Auto-Mapping Materi dari struktur Modul
- */
 
 const KelolaMateri = () => {
   // --- [ CORE STATES ] ---
@@ -23,7 +17,7 @@ const KelolaMateri = () => {
       setError(null);
       
       // Mengarahkan ke endpoint modules sesuai permintaanmu
-      const res = await fetch("http://localhost:5000/api/admin/modules");
+      const res = await fetch(`${API_BASE}/api/admin/modules`);
       
       if (!res.ok) {
         if (res.status === 404) throw new Error("Endpoint /api/admin/modules tidak ditemukan (404).");

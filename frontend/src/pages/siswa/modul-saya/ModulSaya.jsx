@@ -5,6 +5,7 @@ import MemuatModul from "./MemuatModul";
 import HeaderModulSaya from "./HeaderModulSaya";
 import RingkasanModul from "./RingkasanModul";
 import DaftarKartuModul from "./DaftarKartuModul";
+import { API_BASE } from "../config";
 
 const ModulSaya = () => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const ModulSaya = () => {
         setError("");
 
         const modulesRes = await fetch(
-          `http://localhost:5000/api/student/modules?userId=${user.id}`
+          `${API_BASE}/api/student/modules?userId=${user.id}`
         );
 
         if (!modulesRes.ok) {
@@ -50,7 +51,7 @@ const ModulSaya = () => {
         const mergedCourses = await Promise.all(
           modulesData.map(async (mod) => {
             const itemsRes = await fetch(
-              `http://localhost:5000/api/module-items?moduleId=${mod.id}&userId=${user.id}`
+              `${API_BASE}/api/module-items?moduleId=${mod.id}&userId=${user.id}`
             );
 
             if (!itemsRes.ok) {

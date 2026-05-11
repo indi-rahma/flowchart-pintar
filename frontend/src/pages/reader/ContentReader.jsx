@@ -5,8 +5,9 @@ import HeaderMateri from "./HeaderMateri";
 import KontenMateri from "./KontenMateri";
 import SidebarMateri from "./SidebarMateri";
 import "./reader.css";
+import { API_BASE } from "../config";
 
-const API_URL = "http://localhost:5000";
+const API_URL = `${API_BASE}`;
 
 const ContentReader = () => {
   const { moduleId, itemId } = useParams();

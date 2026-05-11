@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { API_BASE } from "../config";
 
 const KelolaUser = () => {
   const [users, setUsers] = useState([]);
@@ -43,7 +44,7 @@ const KelolaUser = () => {
 
       setError("");
 
-      const res = await fetch("http://localhost:5000/api/admin/users");
+      const res = await fetch(`${API_BASE}/api/admin/users`);
       if (!res.ok) throw new Error(`Server error ${res.status}`);
 
       const rawData = await res.json();
@@ -84,7 +85,7 @@ const KelolaUser = () => {
     try {
       setDeletingId(id);
 
-      const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
+      const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
         method: "DELETE",
       });
 

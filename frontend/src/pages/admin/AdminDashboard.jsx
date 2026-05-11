@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { API_BASE } from "../config";
 
 function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -54,8 +55,8 @@ function AdminDashboard() {
 
     try {
       const [usersRes, materiRes] = await Promise.all([
-        fetch("http://localhost:5000/api/admin/users"),
-        fetch("http://localhost:5000/api/admin/materi"),
+        fetch(`${API_BASE}/api/admin/users`),
+        fetch(`${API_BASE}/api/admin/materi`),
       ]);
 
       if (!usersRes.ok) throw new Error("Gagal mengambil data pengguna.");
@@ -90,7 +91,7 @@ function AdminDashboard() {
     setDeletingId(id);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
+      const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
         method: "DELETE",
       });
 

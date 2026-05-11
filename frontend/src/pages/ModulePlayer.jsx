@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { API_BASE } from "../config";
 
 const ModulePlayer = () => {
   const { id } = useParams();
@@ -41,8 +42,8 @@ const ModulePlayer = () => {
         setLoading(true);
 
         const [moduleRes, itemsRes] = await Promise.all([
-          fetch(`http://localhost:5000/api/modules/${id}`),
-          fetch(`http://localhost:5000/api/module-items?moduleId=${id}&userId=${userId}`),
+          fetch(`${API_BASE}/api/modules/${id}`),
+          fetch(`${API_BASE}/api/module-items?moduleId=${id}&userId=${userId}`),
         ]);
 
         if (!moduleRes.ok) throw new Error("Gagal mengambil detail modul");
@@ -95,7 +96,7 @@ const ModulePlayer = () => {
     try {
       setSaving(true);
 
-      const res = await fetch("http://localhost:5000/api/modules/progress", {
+      const res = await fetch(`${API_BASE}/api/modules/progress`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

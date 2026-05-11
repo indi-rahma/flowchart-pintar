@@ -10,8 +10,7 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-
-const API_BASE = "http://localhost:5000";
+import { API_BASE } from "../config";
 
 function FlowNode({ data }) {
   const type = data?.node_type || "process";

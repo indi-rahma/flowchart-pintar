@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import MCQQuiz from "./KuisMCQ";
 import KuisDragAndDrop from "./KuisDragAndDrop";
+import { API_BASE } from "../config";
 
-const API_URL = "http://localhost:5000";
+const API_URL = `${API_BASE}`;
 
 function HalamanKuis({ moduleId, quizId, onFinish }) {
   const [quiz, setQuiz] = useState(null);

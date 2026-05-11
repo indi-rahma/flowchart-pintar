@@ -5,7 +5,7 @@ import RingkasanBelajar from "./RingkasanBelajar";
 import DaftarModul from "./DaftarModul";
 import "./Dashboard.css";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://flowchart-pintar-production.up.railway.app";
 
 const isItemDone = (item) =>
   item?.done === true ||

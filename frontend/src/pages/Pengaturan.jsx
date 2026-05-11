@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE } from "../config";
 
 const Pengaturan = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -27,7 +28,7 @@ const Pengaturan = () => {
         setLoading(true);
 
         const res = await fetch(
-          `http://localhost:5000/api/user/settings?userId=${userId}`
+          `${API_BASE}/api/user/settings?userId=${userId}`
         );
 
         const data = await res.json();
@@ -65,7 +66,7 @@ const Pengaturan = () => {
     try {
       setSaving(true);
 
-      await fetch("http://localhost:5000/api/user/settings", {
+      await fetch(`${API_BASE}/api/user/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -95,7 +96,7 @@ const Pengaturan = () => {
         formData.append("userId", userId);
         formData.append("profile", profileFile);
 
-        await fetch("http://localhost:5000/api/user/profile-photo", {
+        await fetch("https://flowchart-pintar-production.up.railway.app/api/user/profile-photo", {
           method: "PUT",
           body: formData,
         });

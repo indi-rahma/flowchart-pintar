@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import DndForm from "./quiz/DndForm";
 import McqForm from "./quiz/McqForm";
+import { API_BASE } from "../config";
 
 function GuruQuiz() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const moduleId = Number(id);
-  const API_BASE = "http://localhost:5000";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

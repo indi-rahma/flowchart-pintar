@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { API_BASE } from "../config";
 
 const KelolaGuru = () => {
   const [dataGuru, setDataGuru] = useState([]);
@@ -67,7 +68,7 @@ const KelolaGuru = () => {
 
       setError("");
 
-      const res = await fetch("http://localhost:5000/api/admin/guru");
+      const res = await fetch(`${API_BASE}/api/admin/guru`);
       if (!res.ok) throw new Error(`Gagal mengambil data guru (${res.status})`);
 
       const rawData = await res.json();
@@ -99,7 +100,7 @@ const KelolaGuru = () => {
     try {
       setDeletingId(id);
 
-      const res = await fetch(`http://localhost:5000/api/admin/guru/${id}`, {
+      const res = await fetch(`${API_BASE}/api/admin/guru/${id}`, {
         method: "DELETE",
       });
 

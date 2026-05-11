@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { downloadCertificate } from "./Sertifikat";
+import { API_BASE } from "../config";
 
 const Pencapaian = () => {
   const [courses, setCourses] = useState([]);
@@ -21,7 +22,7 @@ const Pencapaian = () => {
         setLoading(true);
 
         const res = await fetch(
-          `http://localhost:5000/api/student/achievements?userId=${userId}`
+          `${API_BASE}/api/student/achievements?userId=${userId}`
         );
 
         if (!res.ok) {

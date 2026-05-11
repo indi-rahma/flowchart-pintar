@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import
 
 function Evaluasi() {
   const { id } = useParams();
@@ -15,7 +16,7 @@ function Evaluasi() {
         setError("");
 
         const res = await fetch(
-          `http://localhost:5000/api/evaluasi/siswa/${id}`
+          `${API_BASE}/api/evaluasi/siswa/${id}`
         );
 
         if (!res.ok) {

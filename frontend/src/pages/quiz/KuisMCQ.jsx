@@ -1,4 +1,5 @@
 import React from "react";
+import { API_BASE } from "../config";
 
 function MCQQuiz({ data, selectedAnswer, setSelectedAnswer, isAnsweredCorrect }) {
   const getImageUrl = (path) => {
@@ -7,10 +8,10 @@ function MCQQuiz({ data, selectedAnswer, setSelectedAnswer, isAnsweredCorrect })
     if (path.startsWith("http")) return path;
 
     if (path.startsWith("/")) {
-      return `http://localhost:5000${path}`;
+      return `${API_BASE}${path}`;
     }
 
-    return `http://localhost:5000/uploads/${path}`;
+    return `${API_BASE}/uploads/${path}`;
   };
 
   const correctAnswer = String(data?.correct_answer || "").toUpperCase();
