@@ -28,6 +28,9 @@ function GuruModul() {
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
   const [itemImages, setItemImages] = useState([]);
 
+  const [draggedModuleId, setDraggedModuleId] = useState(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id;
 
@@ -42,10 +45,11 @@ function GuruModul() {
     );
 
     if (alreadyNested) {
-      return data.map((mod) => ({
+      return data.map((mod, index) => ({
         id: mod.id,
         title: mod.title || "",
         description: mod.description || "",
+        order_index: mod.order_index ?? index + 1,
         items: Array.isArray(mod.items) ? mod.items : [],
       }));
     }
@@ -59,6 +63,7 @@ function GuruModul() {
             id: moduleId,
             title: row.module_title || row.title || "",
             description: row.module_description || row.description || "",
+            order_index: row.module_order_index ?? row.order_index ?? 0,
             items: [],
           };
         }
@@ -76,7 +81,7 @@ function GuruModul() {
             type: row.type || "text",
             content_text: row.content_text || "",
             content_url: row.content_url || "",
-            order_index: row.order_index ?? 0,
+            order_index: row.item_order_index ?? row.order_index ?? 0,
           });
         }
 
@@ -84,7 +89,10 @@ function GuruModul() {
       }, {})
     );
 
-    return grouped;
+    return grouped.map((mod, index) => ({
+      ...mod,
+      order_index: mod.order_index ?? index + 1,
+    }));
   };
 
   const getModules = async () => {
@@ -98,9 +106,7 @@ function GuruModul() {
       setLoading(true);
       setError("");
 
-      const res = await fetch(
-        `${API_BASE}/api/modules?userId=${userId}`
-      );
+      const res = await fetch(`${API_BASE}/api/modules?userId=${userId}`);
 
       if (!res.ok) throw new Error("Gagal mengambil data modul.");
 
@@ -121,9 +127,7 @@ function GuruModul() {
       setLoadingQuiz(true);
       setQuizzes([]);
 
-      const res = await fetch(
-        `${API_BASE}/api/quizzes?moduleId=${moduleId}`
-      );
+      const res = await fetch(`${API_BASE}/api/quizzes?moduleId=${moduleId}`);
 
       if (!res.ok) throw new Error("Gagal mengambil data quiz.");
 
@@ -161,6 +165,7 @@ function GuruModul() {
           title: moduleTitle,
           description: moduleDescription,
           user_id: userId,
+          order_index: modules.length + 1,
         }),
       });
 
@@ -309,22 +314,90 @@ function GuruModul() {
     }
   };
 
-  const filteredModules = useMemo(() => {
-    return modules.filter((m) => {
-      const titleMatch = (m.title || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+  const updateModuleOrder = async (fromModuleId, toModuleId) => {
+    if (!fromModuleId || !toModuleId || fromModuleId === toModuleId) {
+      setDraggedModuleId(null);
+      return;
+    }
 
-      const descMatch = (m.description || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+    const orderedModules = [...modules].sort(
+      (a, b) =>
+        Number(a.order_index ?? 0) - Number(b.order_index ?? 0) ||
+        Number(a.id) - Number(b.id)
+    );
 
-      const itemMatch = (m.items || []).some((it) =>
-        (it.title || "").toLowerCase().includes(searchTerm.toLowerCase())
+    const fromIndex = orderedModules.findIndex(
+      (mod) => String(mod.id) === String(fromModuleId)
+    );
+
+    const toIndex = orderedModules.findIndex(
+      (mod) => String(mod.id) === String(toModuleId)
+    );
+
+    if (fromIndex === -1 || toIndex === -1) {
+      setDraggedModuleId(null);
+      return;
+    }
+
+    const movedModules = [...orderedModules];
+    const [movedModule] = movedModules.splice(fromIndex, 1);
+    movedModules.splice(toIndex, 0, movedModule);
+
+    const reorderedModules = movedModules.map((mod, index) => ({
+      ...mod,
+      order_index: index + 1,
+    }));
+
+    setModules(reorderedModules);
+
+    try {
+      setSavingOrder(true);
+
+      await Promise.all(
+        reorderedModules.map((mod) =>
+          fetch(`${API_BASE}/api/modules/${mod.id}/order`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              order_index: mod.order_index,
+            }),
+          })
+        )
       );
+    } catch (err) {
+      console.error("UPDATE MODULE ORDER ERROR:", err);
+      alert("Urutan modul berubah di tampilan, tapi gagal disimpan ke database.");
+      await getModules();
+    } finally {
+      setSavingOrder(false);
+      setDraggedModuleId(null);
+    }
+  };
 
-      return titleMatch || descMatch || itemMatch;
-    });
+  const filteredModules = useMemo(() => {
+    return modules
+      .filter((m) => {
+        const titleMatch = (m.title || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+
+        const descMatch = (m.description || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+
+        const itemMatch = (m.items || []).some((it) =>
+          (it.title || "").toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        return titleMatch || descMatch || itemMatch;
+      })
+      .sort(
+        (a, b) =>
+          Number(a.order_index ?? 0) - Number(b.order_index ?? 0) ||
+          Number(a.id) - Number(b.id)
+      );
   }, [modules, searchTerm]);
 
   if (loading && modules.length === 0) {
@@ -441,7 +514,9 @@ function GuruModul() {
 
         <div style={styles.statItem}>
           <span style={{ ...styles.statVal, color: "#16A34A" }}>AKTIF</span>
-          <span style={styles.statLab}>Status Sistem</span>
+          <span style={styles.statLab}>
+            {savingOrder ? "Menyimpan Urutan..." : "Status Sistem"}
+          </span>
         </div>
       </div>
 
@@ -451,8 +526,34 @@ function GuruModul() {
             {filteredModules.map((module, idx) => (
               <div
                 key={module.id}
+                draggable={!savingOrder}
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", String(module.id));
+                  setDraggedModuleId(module.id);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+
+                  const fromModuleId = e.dataTransfer.getData("text/plain");
+                  if (!fromModuleId) return;
+
+                  updateModuleOrder(fromModuleId, module.id);
+                }}
+                onDragEnd={() => setDraggedModuleId(null)}
                 style={{
                   ...styles.card,
+                  cursor: savingOrder ? "wait" : "grab",
+                  opacity:
+                    String(draggedModuleId) === String(module.id) ? 0.55 : 1,
+                  borderColor:
+                    String(draggedModuleId) === String(module.id)
+                      ? "#EAB308"
+                      : "#F1F5F9",
                   animation: `slideUp 0.5s ease forwards`,
                   animationDelay: `${idx * 0.08}s`,
                 }}
@@ -486,15 +587,18 @@ function GuruModul() {
                           .slice()
                           .sort(
                             (a, b) =>
-                              (a.order_index ?? 0) - (b.order_index ?? 0)
+                              Number(a.order_index ?? 0) -
+                              Number(b.order_index ?? 0)
                           )
-                          .slice(0, 4)
                           .map((subItem) => (
                             <div key={subItem.id} style={styles.itemPreviewCard}>
                               <div style={styles.itemPreviewTop}>
+                                <span style={styles.dragHandle}>☰</span>
+
                                 <strong style={styles.itemPreviewName}>
                                   {subItem.title || "Tanpa Judul"}
                                 </strong>
+
                                 <span
                                   style={
                                     subItem.type === "quiz"
@@ -502,7 +606,9 @@ function GuruModul() {
                                       : styles.itemPreviewType
                                   }
                                 >
-                                  {subItem.type === "quiz" ? "quiz" : subItem.type || "text"}
+                                  {subItem.type === "quiz"
+                                    ? "quiz"
+                                    : subItem.type || "text"}
                                 </span>
                               </div>
 
@@ -522,20 +628,17 @@ function GuruModul() {
                                   target="_blank"
                                   rel="noreferrer"
                                   style={styles.linkText}
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   Lihat konten
                                 </a>
                               ) : (
-                                <p style={styles.itemPreviewText}>Belum ada isi.</p>
+                                <p style={styles.itemPreviewText}>
+                                  Belum ada isi.
+                                </p>
                               )}
                             </div>
                           ))}
-
-                        {(module.items || []).length > 4 ? (
-                          <small style={styles.moreItemsText}>
-                            + {(module.items || []).length - 4} item lainnya
-                          </small>
-                        ) : null}
                       </div>
                     ) : (
                       <div style={styles.noItemBox}>
@@ -549,7 +652,10 @@ function GuruModul() {
                   <button
                     type="button"
                     style={styles.secondaryBtn}
-                    onClick={() => openTambahMateriModal(module.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openTambahMateriModal(module.id);
+                    }}
                   >
                     + TAMBAH ISI MODUL
                   </button>
@@ -557,7 +663,10 @@ function GuruModul() {
                   <button
                     type="button"
                     style={styles.manageBtn}
-                    onClick={() => navigate(`${module.id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`${module.id}`);
+                    }}
                   >
                     KELOLA ISI MATERI ➔
                   </button>
@@ -1029,6 +1138,7 @@ const styles = {
     border: "1px solid #E2E8F0",
     borderRadius: "12px",
     padding: "10px 12px",
+    transition: "0.2s ease",
   },
   itemPreviewTop: {
     display: "flex",
@@ -1037,9 +1147,17 @@ const styles = {
     gap: "8px",
     marginBottom: "6px",
   },
+  dragHandle: {
+    fontSize: "14px",
+    fontWeight: "900",
+    color: "#94A3B8",
+    cursor: "grab",
+    userSelect: "none",
+  },
   itemPreviewName: {
     fontSize: "13px",
     color: "#0F172A",
+    flex: 1,
   },
   itemPreviewType: {
     fontSize: "10px",

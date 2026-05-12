@@ -23,10 +23,28 @@ function HalamanKuis({ moduleId, quizId, onFinish }) {
 
   const activeQuestion = questions[activeIndex];
 
-  const isDndType = (type) => type === "drag_drop" || type === "dnd";
+  const normalizeType = (type) => String(type || "").trim().toLowerCase();
+
+  const isMcqType = (type) => normalizeType(type) === "mcq";
+
+  const isDndType = (type) => {
+    const normalized = normalizeType(type);
+    return normalized === "drag_drop" || normalized === "dnd";
+  };
 
   const showFeedback = (type, message) => {
     setFeedback({ type, message });
+  };
+
+  const validateDndOrder = () => {
+    if (!dndItems.length) return false;
+
+    return dndItems.every((item, index) => {
+      const correctOrder =
+        item.correct_order ?? item.correctOrder ?? item.order ?? item.position;
+
+      return Number(correctOrder) === index + 1;
+    });
   };
 
   useEffect(() => {
@@ -89,17 +107,17 @@ function HalamanKuis({ moduleId, quizId, onFinish }) {
             const answerMap = {};
             answerData.forEach((item) => {
               answerMap[item.question_id] = {
-  answer: item.answer,
-  is_correct: item.is_correct === 1,
-};
+                answer: item.answer,
+                is_correct: item.is_correct === 1,
+              };
             });
 
             setSavedAnswers(answerMap);
 
             const firstQuestion = questionList[0];
             if (firstQuestion && answerMap[firstQuestion.id]) {
-  setSelectedAnswer(answerMap[firstQuestion.id].answer);
-}
+              setSelectedAnswer(answerMap[firstQuestion.id].answer);
+            }
           }
         }
       } catch (err) {
@@ -116,10 +134,8 @@ function HalamanKuis({ moduleId, quizId, onFinish }) {
   useEffect(() => {
     if (!activeQuestion) return;
 
-    if (activeQuestion.type === "mcq") {
-     setSelectedAnswer(
-  savedAnswers[activeQuestion.id]?.answer || ""
-);
+    if (isMcqType(activeQuestion.type)) {
+      setSelectedAnswer(savedAnswers[activeQuestion.id]?.answer || "");
     }
   }, [activeQuestion, savedAnswers]);
 
@@ -215,7 +231,7 @@ function HalamanKuis({ moduleId, quizId, onFinish }) {
 
     let point = 0;
 
-    if (activeQuestion.type === "mcq") {
+    if (isMcqType(activeQuestion.type)) {
       if (!selectedAnswer) {
         showFeedback("error", "Pilih jawaban dulu yaa 🍼");
         return;
@@ -237,13 +253,13 @@ function HalamanKuis({ moduleId, quizId, onFinish }) {
           isCorrect: true,
         });
 
-setSavedAnswers((prev) => ({
-  ...prev,
-  [activeQuestion.id]: {
-    answer: selectedAnswer,
-    is_correct: true,
-  },
-}));
+        setSavedAnswers((prev) => ({
+          ...prev,
+          [activeQuestion.id]: {
+            answer: selectedAnswer,
+            is_correct: true,
+          },
+        }));
       } catch (err) {
         console.error("SAVE ANSWER ERROR:", err);
         showFeedback("error", "Jawaban benar, tapi gagal disimpan 😭");
@@ -255,8 +271,10 @@ setSavedAnswers((prev) => ({
     }
 
     if (isDndType(activeQuestion.type)) {
-      if (!isDndCorrect) {
-        showFeedback("error", "Urutan drag & drop belum benar yaa 🧩");
+      const isOrderCorrect = validateDndOrder();
+
+      if (!isOrderCorrect || !isDndCorrect) {
+        showFeedback("error", "Urutan flowchart masih salah yaa 🧩");
         return;
       }
 
@@ -308,7 +326,7 @@ setSavedAnswers((prev) => ({
       <div style={quizHeaderStyle}>
         <div>
           <h3 style={quizTitleStyle}>
-            {activeQuestion.type === "mcq"
+            {isMcqType(activeQuestion.type)
               ? "Quiz Pilihan Ganda"
               : "Drag & Drop"}
           </h3>
@@ -318,9 +336,7 @@ setSavedAnswers((prev) => ({
         </div>
 
         <div style={scoreBadgeStyle}>
-          {questions.length
-            ? Math.round((score / questions.length) * 100)
-            : 0}
+          {questions.length ? Math.round((score / questions.length) * 100) : 0}
         </div>
       </div>
 
@@ -341,17 +357,20 @@ setSavedAnswers((prev) => ({
       )}
 
       <div style={quizBodyStyle}>
-        {activeQuestion.type === "mcq" ? (
+        {isMcqType(activeQuestion.type) ? (
           <MCQQuiz
-  data={activeQuestion}
-  selectedAnswer={selectedAnswer}
-  setSelectedAnswer={setSelectedAnswer}
-  isAnsweredCorrect={savedAnswers[activeQuestion.id]?.is_correct === true}
-/>
+            data={activeQuestion}
+            selectedAnswer={selectedAnswer}
+            setSelectedAnswer={setSelectedAnswer}
+            isAnsweredCorrect={
+              savedAnswers[activeQuestion.id]?.is_correct === true
+            }
+          />
         ) : (
           <KuisDragAndDrop
             data={activeQuestion}
             items={dndItems}
+            onItemsChange={setDndItems}
             onCorrectChange={setIsDndCorrect}
           />
         )}

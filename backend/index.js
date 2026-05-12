@@ -659,6 +659,33 @@ app.post("/api/module-items", (req, res) => {
   );
 });
 
+app.put("/api/modules/:id/order", (req, res) => {
+  const { id } = req.params;
+  const { order_index = 0 } = req.body;
+
+  const sql = `
+    UPDATE modules
+    SET order_index = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [Number(order_index) || 0, id], (err, result) => {
+    if (err) {
+      console.error("UPDATE MODULE ORDER ERROR:", err);
+      return res.status(500).json({
+        message: "Gagal mengupdate urutan modul",
+        error: err.message,
+        sqlMessage: err.sqlMessage,
+      });
+    }
+
+    return res.json({
+      message: "Urutan modul berhasil diupdate",
+      affectedRows: result.affectedRows,
+    });
+  });
+});
+
 app.put("/api/module-items/:id", (req, res) => {
   const { id } = req.params;
   const {

@@ -72,7 +72,7 @@ const QuizMateri = ({ item, HalamanKuis, moduleId, handleSelesaiDanLanjut }) => 
         <div className="reader-quiz-icon">🧠</div>
 
         <div>
-          <span className="reader-quiz-badge">PRETEST MCQ</span>
+          <span className="reader-quiz-badge">PRETEST</span>
           <h2>{item.title}</h2>
           <p>
             Kerjakan kuis ini untuk mengukur pemahaman awal sebelum lanjut ke

@@ -166,12 +166,12 @@ function FlowNode({ data }) {
     type === "start"
       ? "START"
       : type === "end"
-      ? "END"
-      : type === "input"
-      ? "INPUT / OUTPUT"
-      : type === "decision"
-      ? "PERCABANGAN"
-      : "PROSES";
+        ? "END"
+        : type === "input"
+          ? "INPUT / OUTPUT"
+          : type === "decision"
+            ? "PERCABANGAN"
+            : "PROSES";
 
   const base = {
     position: "relative",
@@ -194,98 +194,112 @@ function FlowNode({ data }) {
   const shape =
     type === "start"
       ? {
-          ...base,
-          borderRadius: 999,
-          borderColor: "#22c55e",
-          background: "linear-gradient(180deg,#f0fdf4,#ffffff)",
-        }
+        ...base,
+        borderRadius: 999,
+        borderColor: "#22c55e",
+        background: "linear-gradient(180deg,#f0fdf4,#ffffff)",
+      }
       : type === "end"
-      ? {
+        ? {
           ...base,
           borderRadius: 999,
           borderColor: "#ef4444",
           background: "linear-gradient(180deg,#fef2f2,#ffffff)",
         }
-      : type === "input"
-      ? {
-          ...base,
-          borderRadius: 14,
-          transform: "skew(-12deg)",
-          borderColor: "#3b82f6",
-          background: "linear-gradient(180deg,#eff6ff,#ffffff)",
-        }
-      : type === "decision"
-      ? {
-          ...base,
-          width: 132,
-          height: 132,
-          minWidth: 132,
-          minHeight: 132,
-          padding: 16,
-          transform: "rotate(45deg)",
-          borderColor: "#8b5cf6",
-          background: "linear-gradient(180deg,#f5f3ff,#ffffff)",
-        }
-      : {
-          ...base,
-          borderRadius: 18,
-          background: "linear-gradient(180deg,#fffbeb,#ffffff)",
-        };
+        : type === "input"
+          ? {
+            ...base,
+            borderRadius: 14,
+            transform: "skew(-12deg)",
+            borderColor: "#3b82f6",
+            background: "linear-gradient(180deg,#eff6ff,#ffffff)",
+          }
+          : type === "decision"
+            ? {
+              ...base,
+              width: 132,
+              height: 132,
+              minWidth: 132,
+              minHeight: 132,
+              padding: 16,
+              transform: "rotate(45deg)",
+              borderColor: "#8b5cf6",
+              background: "linear-gradient(180deg,#f5f3ff,#ffffff)",
+            }
+            : {
+              ...base,
+              borderRadius: 18,
+              background: "linear-gradient(180deg,#fffbeb,#ffffff)",
+            };
 
   const textFix =
     type === "decision"
       ? {
-          transform: "rotate(-45deg)",
-          display: "block",
-          maxWidth: 96,
-          lineHeight: 1.25,
-        }
+        transform: "rotate(-45deg)",
+        display: "block",
+        maxWidth: 96,
+        lineHeight: 1.25,
+      }
       : type === "input"
-      ? { transform: "skew(12deg)", display: "block" }
-      : { display: "block" };
+        ? { transform: "skew(12deg)", display: "block" }
+        : { display: "block" };
 
   return (
     <div style={shape}>
-      {type !== "start" && (
-        <Handle type="target" position={Position.Top} style={handleStyle} />
-      )}
+
+      {/* TARGET HANDLE */}
+      <Handle type="target" position={Position.Top} style={topHandleStyle} />
+      <Handle type="target" position={Position.Left} style={leftHandleStyle} />
+      <Handle type="target" position={Position.Right} style={rightHandleStyle} />
+      <Handle type="target" position={Position.Bottom} style={bottomHandleStyle} />
 
       <span style={textFix}>
         <small style={nodeTypeStyle}>{label}</small>
         <b>{data?.label}</b>
       </span>
 
-      {type === "decision" ? (
+      {/* SOURCE HANDLE */}
+      {type !== "end" && (
         <>
           <Handle
             type="source"
-            id="yes"
-            position={Position.Right}
-            style={handleStyle}
+            id="top"
+            position={Position.Top}
+            style={topHandleStyle}
           />
 
           <Handle
             type="source"
-            id="no"
-            position={Position.Bottom}
-            style={handleStyle}
+            id="left"
+            position={Position.Left}
+            style={leftHandleStyle}
           />
 
+          <Handle
+            type="source"
+            id="right"
+            position={Position.Right}
+            style={rightHandleStyle}
+          />
+
+          <Handle
+            type="source"
+            id="bottom"
+            position={Position.Bottom}
+            style={bottomHandleStyle}
+          />
+        </>
+      )}
+
+      {type === "decision" && (
+        <>
           <span style={yesLabelStyle}>Ya</span>
           <span style={noLabelStyle}>Tidak</span>
         </>
-      ) : type !== "end" ? (
-        <Handle
-          type="source"
-          id="out"
-          position={Position.Bottom}
-          style={handleStyle}
-        />
-      ) : null}
+      )}
     </div>
   );
 }
-
 const nodeTypes = { flowNode: FlowNode };
 const edgeTypes = { floating: FloatingEdge };
 
@@ -293,6 +307,10 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isCorrect, setIsCorrect] = useState(false);
+
+  const shuffledItems = useMemo(() => {
+    return [...items].sort(() => Math.random() - 0.5);
+  }, [items]);
 
   const sortedItems = useMemo(() => {
     return [...items].sort(
@@ -309,9 +327,10 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
       (item) => getNodeType(item) === "decision"
     );
 
-    return sortedItems.map((item, index) => {
-      let x = isMobile ? 180 : 420;
-      let y = 70 + index * 140;
+    return shuffledItems.map((item, index) => {
+      let x = (isMobile ? 40 : 120) + Math.random() * (isMobile ? 220 : 700);
+
+      let y = 40 + Math.random() * 420;
 
       if (decisionIndex !== -1 && index > decisionIndex) {
         const after = index - decisionIndex;
@@ -353,61 +372,51 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
   }, [resetCanvas]);
 
   const validateFlow = useCallback(
-    (currentEdges) => {
-      if (!sortedItems.length) {
-        setIsCorrect(false);
-        onCorrectChange?.(false);
-        return;
-      }
+  (currentEdges) => {
+    if (!sortedItems.length) {
+      setIsCorrect(false);
+      onCorrectChange?.(false);
+      return;
+    }
 
-      const nodeIds = sortedItems.map((item) => String(item.id));
-      const startNode = sortedItems.find((item) => getNodeType(item) === "start");
-      const endNode = sortedItems.find((item) => getNodeType(item) === "end");
+    let valid = true;
 
-      const allNonStartHaveInput = sortedItems
-        .filter((item) => getNodeType(item) !== "start")
-        .every((item) =>
-          currentEdges.some((edge) => edge.target === String(item.id))
+    for (let i = 0; i < sortedItems.length - 1; i++) {
+      const current = sortedItems[i];
+      const next = sortedItems[i + 1];
+
+      const currentType = getNodeType(current);
+
+      // decision cukup punya minimal 2 cabang
+      if (currentType === "decision") {
+        const outgoing = currentEdges.filter(
+          (edge) => String(edge.source) === String(current.id)
         );
 
-      const allNonEndHaveOutput = sortedItems
-        .filter((item) => getNodeType(item) !== "end")
-        .every((item) => {
-          const outgoing = currentEdges.filter(
-            (edge) => edge.source === String(item.id)
-          );
+        if (outgoing.length < 2) {
+          valid = false;
+        }
 
-          if (getNodeType(item) === "decision") {
-            const hasYes = outgoing.some((edge) => edge.sourceHandle === "yes");
-            const hasNo = outgoing.some((edge) => edge.sourceHandle === "no");
-            return hasYes && hasNo;
-          }
+        continue;
+      }
 
-          return outgoing.length >= 1;
-        });
-
-      const noSelfLoop = currentEdges.every((edge) => edge.source !== edge.target);
-
-      const allEdgesValid = currentEdges.every(
-        (edge) => nodeIds.includes(edge.source) && nodeIds.includes(edge.target)
+      const hasConnection = currentEdges.some(
+        (edge) =>
+          String(edge.source) === String(current.id) &&
+          String(edge.target) === String(next.id)
       );
 
-      const enoughEdges = currentEdges.length >= sortedItems.length - 1;
+      if (!hasConnection) {
+        valid = false;
+        break;
+      }
+    }
 
-      const correct =
-        Boolean(startNode) &&
-        Boolean(endNode) &&
-        enoughEdges &&
-        allNonStartHaveInput &&
-        allNonEndHaveOutput &&
-        noSelfLoop &&
-        allEdgesValid;
-
-      setIsCorrect(correct);
-      onCorrectChange?.(correct);
-    },
-    [sortedItems, onCorrectChange]
-  );
+    setIsCorrect(valid);
+    onCorrectChange?.(valid);
+  },
+  [sortedItems, onCorrectChange]
+);
 
   useEffect(() => {
     validateFlow(edges);
@@ -421,8 +430,8 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
         params.sourceHandle === "yes"
           ? "Ya"
           : params.sourceHandle === "no"
-          ? "Tidak"
-          : "";
+            ? "Tidak"
+            : "";
 
       setEdges((eds) => {
         const filtered = eds.filter((edge) => {
@@ -442,9 +451,8 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
         const next = addEdge(
           {
             ...params,
-            id: `edge-${params.source}-${params.sourceHandle || "out"}-${
-              params.target
-            }-${Date.now()}`,
+            id: `edge-${params.source}-${params.sourceHandle || "out"}-${params.target
+              }-${Date.now()}`,
             type: "floating",
             animated: false,
             label,
@@ -489,14 +497,14 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
       <style>{animationStyle}</style>
 
       <div style={heroStyle}>
-  <div
-    className="quiz-hero-text"
-    style={{
-      flex: "1 1 320px",
-      minWidth: 0,
-      width: "100%",
-    }}
-  >
+        <div
+          className="quiz-hero-text"
+          style={{
+            flex: "1 1 320px",
+            minWidth: 0,
+            width: "100%",
+          }}
+        >
           <p style={eyebrowStyle}>Flowchart Canvas Challenge</p>
           <h3 style={questionStyle}>{data?.question}</h3>
           <p style={hintStyle}>
@@ -504,14 +512,14 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
             koneksi. Untuk percabangan, gunakan jalur <b>Ya</b> dan <b>Tidak</b>.
           </p>
         </div>
-<button
-  type="button"
-  className="quiz-reset-btn"
-  onClick={resetCanvas}
-  style={resetBtnStyle}
->
-  🔄 Rapikan Lagi
-</button>
+        <button
+          type="button"
+          className="quiz-reset-btn"
+          onClick={resetCanvas}
+          style={resetBtnStyle}
+        >
+          🔄 Rapikan Lagi
+        </button>
       </div>
 
       <div style={legendStyle}>
@@ -529,6 +537,11 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onEdgeClick={(event, edge) => {
+            event.stopPropagation();
+
+            setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+          }}
           fitView
           snapToGrid
           snapGrid={[20, 20]}
@@ -554,7 +567,7 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
       >
         {isCorrect
           ? "Mantap! Alur flowchart sudah lengkap dan tombol lanjut aktif ✅"
-          : "Belum lengkap. Pastikan semua node terhubung dan decision punya panah Ya/Tidak 🧠"}
+          : ": Urutan flowchart belum tepat. Susun panah sesuai alur yang benar ya 🧠"}
       </div>
     </div>
   );
@@ -563,6 +576,36 @@ function KuisDragAndDrop({ data, items = [], onCorrectChange }) {
 const wrapperStyle = {
   padding: "clamp(14px, 4vw, 24px)",
 };
+const commonHandleStyle = {
+  width: 16,
+  height: 16,
+  background: "#111827",
+  border: "3px solid #ffffff",
+  borderRadius: "999px",
+  opacity: 1,
+  boxShadow: "0 4px 12px rgba(15,23,42,0.25)",
+};
+
+const topHandleStyle = {
+  ...commonHandleStyle,
+  top: -8,
+};
+
+const bottomHandleStyle = {
+  ...commonHandleStyle,
+  bottom: -8,
+};
+
+const leftHandleStyle = {
+  ...commonHandleStyle,
+  left: -8,
+};
+
+const rightHandleStyle = {
+  ...commonHandleStyle,
+  right: -8,
+};
+
 
 const heroStyle = {
   width: "100%",
@@ -617,7 +660,7 @@ const resetBtnStyle = {
   cursor: "pointer",
   boxShadow: "0 12px 24px rgba(0,122,255,.18)",
   whiteSpace: "nowrap",
-flexShrink: 0,
+  flexShrink: 0,
 };
 
 const legendStyle = {
@@ -708,13 +751,6 @@ const animationStyle = `
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-}
-
-.react-flow__handle {
-  opacity: 0 !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
 }
 
 .react-flow__resize-control,
