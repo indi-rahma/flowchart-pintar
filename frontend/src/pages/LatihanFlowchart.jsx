@@ -10,27 +10,153 @@ import {
   useNodesState,
   useEdgesState,
   MarkerType,
+  BaseEdge,
+  getStraightPath,
+  useInternalNode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
+
+function getNodeBox(node) {
+  const position =
+    node?.internals?.positionAbsolute ||
+    node?.positionAbsolute ||
+    node?.position ||
+    { x: 0, y: 0 };
+
+  const width = node?.measured?.width || node?.width || 180;
+  const height = node?.measured?.height || node?.height || 110;
+
+  return {
+    x: position.x,
+    y: position.y,
+    width,
+    height,
+    centerX: position.x + width / 2,
+    centerY: position.y + height / 2,
+  };
+}
+
+function getBoundaryPoint(fromNode, toNode) {
+  const from = getNodeBox(fromNode);
+  const to = getNodeBox(toNode);
+  const shape = fromNode?.data?.shape || "process";
+
+  const dx = to.centerX - from.centerX;
+  const dy = to.centerY - from.centerY;
+
+  if (dx === 0 && dy === 0) {
+    return { x: from.centerX, y: from.centerY };
+  }
+
+  if (shape === "terminator" || shape === "database") {
+    const rx = from.width / 2 - 12;
+    const ry = from.height / 2 - 25;
+    const scale = 1 / Math.sqrt((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry));
+
+    return {
+      x: from.centerX + dx * scale,
+      y: from.centerY + dy * scale,
+    };
+  }
+
+  if (shape === "decision") {
+    const halfWidth = from.width / 2 - 5;
+    const halfHeight = from.height / 2 - 5;
+    const scale = 1 / (Math.abs(dx) / halfWidth + Math.abs(dy) / halfHeight);
+
+    return {
+      x: from.centerX + dx * scale,
+      y: from.centerY + dy * scale,
+    };
+  }
+
+  if (shape === "io" || shape === "manual") {
+    const halfWidth = from.width / 2 - 18;
+    const halfHeight = from.height / 2 - 25;
+    const scaleX = dx === 0 ? Infinity : Math.abs(halfWidth / dx);
+    const scaleY = dy === 0 ? Infinity : Math.abs(halfHeight / dy);
+    const scale = Math.min(scaleX, scaleY);
+
+    return {
+      x: from.centerX + dx * scale,
+      y: from.centerY + dy * scale,
+    };
+  }
+
+  if (shape === "text") {
+    const halfWidth = from.width / 2 - 10;
+    const halfHeight = from.height / 2 - 10;
+    const scaleX = dx === 0 ? Infinity : Math.abs(halfWidth / dx);
+    const scaleY = dy === 0 ? Infinity : Math.abs(halfHeight / dy);
+    const scale = Math.min(scaleX, scaleY);
+
+    return {
+      x: from.centerX + dx * scale,
+      y: from.centerY + dy * scale,
+    };
+  }
+
+  const halfWidth = from.width / 2 - 10;
+  const halfHeight = from.height / 2 - 25;
+  const scaleX = dx === 0 ? Infinity : Math.abs(halfWidth / dx);
+  const scaleY = dy === 0 ? Infinity : Math.abs(halfHeight / dy);
+  const scale = Math.min(scaleX, scaleY);
+
+  return {
+    x: from.centerX + dx * scale,
+    y: from.centerY + dy * scale,
+  };
+}
+
+function ShapeEdge({ id, source, target, markerEnd, style }) {
+  const sourceNode = useInternalNode(source);
+  const targetNode = useInternalNode(target);
+
+  if (!sourceNode || !targetNode) return null;
+
+  const sourcePoint = getBoundaryPoint(sourceNode, targetNode);
+  const targetPoint = getBoundaryPoint(targetNode, sourceNode);
+
+  const [edgePath] = getStraightPath({
+    sourceX: sourcePoint.x,
+    sourceY: sourcePoint.y,
+    targetX: targetPoint.x,
+    targetY: targetPoint.y,
+  });
+
+  return (
+    <BaseEdge
+      id={id}
+      path={edgePath}
+      markerEnd={markerEnd}
+      style={{
+        strokeWidth: 2.8,
+        stroke: "#1D1D1F",
+        strokeLinecap: "round",
+        ...style,
+      }}
+    />
+  );
+}
 
 const FlowNode = ({ data, selected }) => {
   const strokeColor = selected ? "#007AFF" : "#1D1D1F";
 
   return (
     <div style={styles.nodeBox}>
-      <Handle id="top-source" type="source" position={Position.Top} style={{ ...styles.handle, left: "45%" }} />
-      <Handle id="top-target" type="target" position={Position.Top} style={{ ...styles.handle, left: "55%" }} />
+      <Handle id="top-source" type="source" position={Position.Top} style={{ ...styles.handle, left: "50%" }} />
+      <Handle id="top-target" type="target" position={Position.Top} style={{ ...styles.handle, left: "50%" }} />
 
-      <Handle id="right-source" type="source" position={Position.Right} style={{ ...styles.handle, top: "45%" }} />
-      <Handle id="right-target" type="target" position={Position.Right} style={{ ...styles.handle, top: "55%" }} />
+      <Handle id="right-source" type="source" position={Position.Right} style={{ ...styles.handle, top: "50%" }} />
+      <Handle id="right-target" type="target" position={Position.Right} style={{ ...styles.handle, top: "50%" }} />
 
-      <Handle id="bottom-source" type="source" position={Position.Bottom} style={{ ...styles.handle, left: "45%" }} />
-      <Handle id="bottom-target" type="target" position={Position.Bottom} style={{ ...styles.handle, left: "55%" }} />
+      <Handle id="bottom-source" type="source" position={Position.Bottom} style={{ ...styles.handle, left: "50%" }} />
+      <Handle id="bottom-target" type="target" position={Position.Bottom} style={{ ...styles.handle, left: "50%" }} />
 
-      <Handle id="left-source" type="source" position={Position.Left} style={{ ...styles.handle, top: "45%" }} />
-      <Handle id="left-target" type="target" position={Position.Left} style={{ ...styles.handle, top: "55%" }} />
+      <Handle id="left-source" type="source" position={Position.Left} style={{ ...styles.handle, top: "50%" }} />
+      <Handle id="left-target" type="target" position={Position.Left} style={{ ...styles.handle, top: "50%" }} />
 
       {data.shape === "text" ? (
         <div
@@ -105,6 +231,10 @@ const nodeTypes = {
   flowNode: FlowNode,
 };
 
+const edgeTypes = {
+  shapeEdge: ShapeEdge,
+};
+
 function LatihanFlowchart() {
   const flowRef = useRef(null);
 
@@ -155,7 +285,7 @@ function LatihanFlowchart() {
         addEdge(
           {
             ...params,
-            type: "smoothstep",
+            type: "shapeEdge",
             animated: false,
             style: {
               stroke: "#1D1D1F",
@@ -427,6 +557,7 @@ function LatihanFlowchart() {
           <div ref={flowRef} style={styles.canvas}>
             <ReactFlow
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
@@ -442,7 +573,7 @@ function LatihanFlowchart() {
               deleteKeyCode={["Backspace", "Delete"]}
               multiSelectionKeyCode={["Shift"]}
               defaultEdgeOptions={{
-                type: "smoothstep",
+                type: "shapeEdge",
                 style: {
                   strokeWidth: 2.8,
                   stroke: "#1D1D1F",
@@ -458,7 +589,7 @@ function LatihanFlowchart() {
                 stroke: "#1D1D1F",
                 strokeWidth: 2.8,
               }}
-              connectionLineType="smoothstep"
+              connectionLineType="straight"
               snapToGrid={true}
               snapGrid={[10, 10]}
             >
@@ -556,51 +687,50 @@ const styles = {
     color: "#FFF",
     fontWeight: "800",
     cursor: "pointer",
-    boxShadow: "0 12px 28px rgba(0,122,255,0.28)",
+    boxShadow: "0 10px 24px rgba(0,122,255,0.24)",
   },
 
   toolbar: {
-    width: "100%",
+    background: "rgba(255,255,255,0.75)",
+    border: "1px solid rgba(60,60,67,0.12)",
+    borderRadius: "28px",
     padding: "18px",
-    border: "1px solid rgba(60,60,67,0.14)",
-    borderRadius: "30px",
-    background: "rgba(255,255,255,0.78)",
-    boxShadow: "0 18px 45px rgba(0,0,0,0.08)",
-    maxHeight: "720px",
-    overflowY: "auto",
-    backdropFilter: "blur(22px)",
+    boxShadow: "0 18px 50px rgba(0,0,0,0.08)",
+    backdropFilter: "blur(18px)",
+    alignSelf: "start",
   },
 
   toolbarTitle: {
-    margin: "0 0 16px",
-    fontSize: "18px",
+    margin: "0 0 14px",
+    fontSize: "16px",
     fontWeight: "900",
-    letterSpacing: "-0.3px",
   },
 
   toolBtn: {
     width: "100%",
-    minHeight: "56px",
-    padding: "10px",
+    minHeight: "54px",
     marginBottom: "10px",
+    padding: "10px",
     borderRadius: "18px",
     border: "1px solid rgba(60,60,67,0.12)",
-    background: "#FFFFFF",
-    cursor: "pointer",
+    background: "#FFF",
+    color: "#1D1D1F",
     fontWeight: "800",
+    cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "10px",
-    boxShadow: "0 8px 18px rgba(0,0,0,0.04)",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
   },
 
   editPanel: {
     marginTop: "16px",
     padding: "14px",
     borderRadius: "22px",
-    background: "#F5F5F7",
+    background: "#FFFFFF",
     border: "1px solid rgba(60,60,67,0.12)",
+    boxShadow: "0 10px 24px rgba(0,0,0,0.07)",
   },
 
   editTitle: {
@@ -611,22 +741,20 @@ const styles = {
 
   editInput: {
     width: "100%",
-    padding: "13px 14px",
-    borderRadius: "16px",
-    border: "1px solid rgba(60,60,67,0.18)",
-    background: "#FFFFFF",
-    fontWeight: "700",
+    padding: "12px 14px",
+    borderRadius: "14px",
+    border: "1px solid rgba(60,60,67,0.2)",
     outline: "none",
-    fontSize: "14px",
+    fontWeight: "750",
   },
 
   doneBtn: {
     width: "100%",
     marginTop: "10px",
-    padding: "12px",
-    borderRadius: "999px",
+    padding: "11px",
+    borderRadius: "14px",
     border: "none",
-    background: "#1D1D1F",
+    background: "#007AFF",
     color: "#FFF",
     fontWeight: "900",
     cursor: "pointer",
@@ -634,16 +762,18 @@ const styles = {
 
   canvasWrap: {
     minWidth: 0,
+    height: "calc(100vh - 150px)",
+    minHeight: "620px",
+    borderRadius: "30px",
+    overflow: "hidden",
+    border: "1px solid rgba(60,60,67,0.12)",
+    boxShadow: "0 18px 50px rgba(0,0,0,0.08)",
+    background: "#FFFFFF",
   },
 
   canvas: {
-    height: "min(720px, 72vh)",
-    minHeight: "520px",
-    border: "1px solid rgba(60,60,67,0.14)",
-    borderRadius: "32px",
-    overflow: "hidden",
-    background: "#FFFFFF",
-    boxShadow: "0 20px 55px rgba(0,0,0,0.1)",
+    width: "100%",
+    height: "100%",
   },
 
   nodeBox: {
@@ -654,13 +784,14 @@ const styles = {
 
   nodeText: {
     position: "absolute",
-    inset: "20px 18px",
+    inset: "0",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    padding: "20px 24px",
     textAlign: "center",
-    fontWeight: "850",
-    fontSize: "12px",
+    fontSize: "14px",
+    fontWeight: "900",
     lineHeight: "1.25",
     color: "#1D1D1F",
     zIndex: 3,
