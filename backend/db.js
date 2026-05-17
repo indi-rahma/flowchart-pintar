@@ -1,16 +1,21 @@
 require("dotenv").config();
 const mysql = require("mysql2");
 
-const db = mysql.createConnection(
-  process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL
-);
+const db = mysql.createPool({
+  uri: process.env.MYSQL_PUBLIC_URL,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
-db.connect((err) => {
+db.getConnection((err, connection) => {
   if (err) {
     console.log("Database gagal terkoneksi:", err);
-  } else {
-    console.log("Database MySQL Railway terkoneksi 🚀");
+    return;
   }
+
+  console.log("Database MySQL Railway terkoneksi 🚀");
+  connection.release();
 });
 
 module.exports = db;
